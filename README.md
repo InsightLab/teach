@@ -1,2 +1,1 @@
-# Demo_Application
-Repositório de Pesquisa
+# TEACH - Trajectory Embedding Comparator Benchmark
