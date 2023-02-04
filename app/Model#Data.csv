@@ -1,2 +1,5 @@
 Model,Data
-LBERT,data_LBERT
+LBERT-FT,tjr
+LBERT,tjr
+LW2V-FT,tjr
+LW2V,tjr
