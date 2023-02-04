@@ -47,7 +47,7 @@ Enter in the *app* directory:
 > cd app
 ```
 
-Add to the *lat_lon_sensors* directory a *.csv* table containing the following attributes: *geos25*, *lat*, *lon*,*nodeId*, *nodeLat*, *nodeLon*, *token_id*. Finally, to use the tool just run the following command:
+Add to the *lat_lon_sensors* directory a *.csv* table containing the following attributes: *geos25*, *lat*, *lon*, *nodeId*, *nodeLat*, *nodeLon*, *token_id*. Finally, to use the tool just run the following command:
 
 ```
 > voila teach.ipynb
