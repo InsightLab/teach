@@ -50,16 +50,26 @@ class Extrinsic_Evaluation_Output:
         tokenizer_df = tokenizer_df[["sensor"]]
 
                 
-        df = pd.read_csv("trajectories/" + dict(pd.read_csv("Model#Emb.csv").values)[model_name] + "_" + dict(pd.read_csv("Model#Data.csv").values)[model_name] + "_sample_trajs" +".csv") 
+        df = pd.read_csv("trajectories/" + dict(pd.read_csv("Model#Emb.csv").values)[model_name] + "_" + dict(pd.read_csv("Model#Data.csv").values)[model_name] + "_trajs" +".csv") 
 
         df["0"] = df["0"].apply(lambda x : x.replace("[","").replace("]","").replace(",","").replace("\n","").replace("'",""))
         df["0"] = df["0"].apply(lambda x : x.split())
         df.rename(columns = {'Unnamed: 0':'trajectory_number'}, inplace = True)
         df["trajectory_number"] = df["trajectory_number"].apply(lambda x: str(x))
 
-
+     
         Dict_Geo25 = { geo25.upper():vector  for geo25,vector in zip(list(tokenizer_df['sensor'].values),tokenizer_df.index)}
-        df["0"] = df["0"].apply(lambda x:[ Dict_Geo25[geo25] for geo25 in x])
+
+        aux1 = []
+        for i in df["0"].index:
+            aux2 = []
+            for geo25 in df["0"].loc[i]:
+                if(geo25 in Dict_Geo25.keys()):
+                    aux2.append(Dict_Geo25[geo25])
+            aux1.append(aux2)
+
+        df["0"] = aux1
+
         validation = False
                 
 

@@ -8,7 +8,6 @@ import networkx as nx
 
 from time import sleep
 from tqdm import trange
-from random import sample 
 import nltk
 
 import pathlib
@@ -66,9 +65,7 @@ class Intrinsic_Evaluation_Output:
         self.t_id_list = []
         self.traj_id_dict_all = {}
         self.traj_id_dict = {}
-        self.traj_data_sample = ""
 
-        self.LatLong_sample = ""
         self.LatLong = ""
         self.LL = ""
         
@@ -98,7 +95,7 @@ class Intrinsic_Evaluation_Output:
         self.Dataset_geo25 = ""
         
 
-        self.sensors_traj_sample = []
+        self.sensors_traj = []
         self.sts_id = []
 
         self.topk_loc = -1
@@ -106,6 +103,7 @@ class Intrinsic_Evaluation_Output:
 
         self.validation = True
         self.validation_2 = True
+        #self.without_road_matrix = False
 
         if(len(list(self.Emb_df.Emb))==0):
             
@@ -115,11 +113,11 @@ class Intrinsic_Evaluation_Output:
         
             self.embedding_linked()
             
-            self.data_sample_traj_matrix_first_read()
+            self.traj_matrix_first_read()
             
             if(self.validation):
             
-                self.data_sample_traj_matrix_first_creation()
+                self.traj_matrix_first_creation()
 
             else:
 
@@ -206,7 +204,14 @@ class Intrinsic_Evaluation_Output:
         self.intrinsic_evaluation_box = widgets.VBox([widgets.HBox([widgets.VBox([self.embedding_text,self.embedding_choice_out]),self.spc,self.spc,self.spc1, 
                                                       widgets.VBox([self.text_dataset_out])]),self.spc, self.intrinsic_accordion])
         
+    #def road_matrix_yes(self):
 
+    #    self.road_matrix_creation()
+
+    #def road_matrix_no(self):
+
+    #    self.without_road_matrix = True
+    #    self.intrinsic_evaluation_output.clear_output()
 
     def on_change_object_traj(self,change):
 
@@ -226,33 +231,34 @@ class Intrinsic_Evaluation_Output:
         
     def on_change_embedding_choice(self, change):
             
-            self.embedding = change.new
-                
-            aux_emb = pd.read_csv("embeddings/" + self.embedding + ".csv") 
-        
-            self.tokenizer_df = aux_emb.loc[0:list(pd.isnull(aux_emb["sensor"])).index(True)-1,["sensor","id"]]
-            self.tokenizer_df.id = [int(i) for i in self.tokenizer_df.id]
-            self.tokenizer_df.index = self.tokenizer_df.id
-            self.tokenizer_df = self.tokenizer_df[["sensor","id"]]
+        self.embedding = change.new
+            
+        aux_emb = pd.read_csv("embeddings/" + self.embedding + ".csv") 
+    
+        self.tokenizer_df = aux_emb.loc[0:list(pd.isnull(aux_emb["sensor"])).index(True)-1,["sensor","id"]]
+        self.tokenizer_df.id = [int(i) for i in self.tokenizer_df.id]
+        self.tokenizer_df.index = self.tokenizer_df.id
+        self.tokenizer_df = self.tokenizer_df[["sensor","id"]]
 
-            self.embeddding_matrix = aux_emb.loc[list(pd.isnull(aux_emb["sensor"])).index(True):int(list(pd.isnull(aux_emb["sensor"])).index(True)*2),
-                            [str(i) for i in range(len(aux_emb.columns)-2)]]
+        self.embeddding_matrix = aux_emb.loc[list(pd.isnull(aux_emb["sensor"])).index(True):int(list(pd.isnull(aux_emb["sensor"])).index(True)*2),
+                        [str(i) for i in range(len(aux_emb.columns)-2)]]
+        
+        self.embeddding_matrix.index = [i for i in range(self.embeddding_matrix.shape[0])]
+
+        
+        with self.text_dataset_out:
             
-            self.embeddding_matrix.index = [i for i in range(self.embeddding_matrix.shape[0])]
+            self.text_dataset_out.clear_output()
             
-            with self.text_dataset_out:
-                
-                self.text_dataset_out.clear_output()
-                
-                display(widgets.Label("Processing..."))
+            display(widgets.Label("Processing..."))
+        
+            self.text_dataset.options = [''] if(not(self.embedding in self.Emb_dict.keys())) else self.Emb_dict[self.embedding] + ['']
             
-                self.text_dataset.options = [''] if(not(self.embedding in self.Emb_dict.keys())) else self.Emb_dict[self.embedding] + ['']
-                
-                self.text_dataset.value = ''
-                
-                self.text_dataset_out.clear_output()
-                
-                display(self.text_dataset)
+            self.text_dataset.value = ''
+            
+            self.text_dataset_out.clear_output()
+            
+            display(self.text_dataset)
 
 
     def embedding_not_linked(self):
@@ -292,7 +298,7 @@ class Intrinsic_Evaluation_Output:
         
         self.embedding = self.Emb_list[0]
         
-        self.LatLong   = pd.read_csv("data/"+self.traj_data+".csv") 
+        self.LatLong   = pd.read_csv("data/"+self.traj_data + ".csv") 
         aux_latlon = sorted(list(set(self.LatLong["trajectory_id"])))
         
         self.LL = pd.read_csv("lat_lon_sensors/"+"sensors_roubados_representativos_countmin18(1).csv", index_col='geos25')
@@ -302,137 +308,96 @@ class Intrinsic_Evaluation_Output:
         self.LL.set_index('sensor', inplace=True)
         
         self.t_id_list = []
-        Sensors = list(self.tokenizer_df["sensor"].apply(lambda x : x.upper()))
-        
-        
+            
         for tid in aux_latlon:
-            
-            traj = list(self.LatLong[self.LatLong["trajectory_id"] == tid]["location_label"])
-            
-            in_dict = True
-            
-            for sensor in traj:
-                
-                if(not(sensor in Sensors)):
-                    in_dict = False
-            
-            if(in_dict):
-                
-                self.t_id_list.append(tid)
+
+            self.t_id_list.append(tid)
                 
         
         self.t_id_list = sorted(self.t_id_list)
         self.traj_id_dict_all = {self.t_id_list[i]: i for i in range(len(self.t_id_list))}
 
+        trajs = listdir("./trajectories")
 
-    def data_sample_traj_matrix_first_read(self):
+        if(self.embedding + "_" + self.traj_data + "_trajs" + ".csv" in trajs):
 
-        
-        for file in listdir("./data_samples"):
+            self.LatLong = pd.read_csv("data/" + self.traj_data + ".csv") 
+            t_id_list = sorted(list(set(self.LatLong["trajectory_id"])))
+            self.traj_id_dict = {tid: self.traj_id_dict_all[tid] for tid in t_id_list}
+            self.Objects_traj = sorted(list(self.traj_id_dict.values()))
+            self.obj_traj = self.Objects_traj[0]
+
+            trajs_token = sorted(self.traj_id_dict.keys())
+
+            self.Dataset = pd.read_csv("trajectories/" + self.embedding + "_" + self.traj_data + "_trajs" + ".csv") 
+            
+            self.Dataset["0"] = self.Dataset["0"].apply(lambda x : x.replace("[","").replace("]","").replace(",","").replace("\n","").replace("'",""))
+            self.Dataset["0"] = self.Dataset["0"].apply(lambda x : x.split())
+            self.Dataset["trajectory_number"] = self.Dataset["trajectory_number"].apply(lambda x: str(x))
+
+            self.Traj_Number_Traj_id = pd.DataFrame({"0":trajs_token},index=[str(self.traj_id_dict[i]) for i in trajs_token])
+
+            self.Dataset_geo25 = copy(self.Dataset)
+
+            self.Dict_Geo25 = { geo25.upper():vector  for geo25,vector in zip(list(self.tokenizer_df['sensor'].values),np.array(self.embedding_matrix))}
+
+
+            self.Dataset["0"] = self.Dataset["0"].apply(lambda x:[ self.Dict_Geo25[geo25] if(geo25 in self.Dict_Geo25.keys()) else np.zeros((1,self.embedding_matrix.shape[1]))[0] for geo25 in x ]) 
+            self.Dataset["0"] = self.Dataset["0"].apply(lambda x : np.array(sum(x)/len(x)))
+
+        else:
+
+            self.LatLong = pd.read_csv("data/" + self.traj_data + ".csv") 
+            t_id_list = sorted(list(set(self.LatLong["trajectory_id"])))
+            self.traj_id_dict = {tid: self.traj_id_dict_all[tid] for tid in t_id_list}
+            self.Objects_traj = sorted(list(self.traj_id_dict.values()))
+            self.obj_traj = self.Objects_traj[0]
+            trajs_token = sorted(self.traj_id_dict.keys())
+
+            traj_dict = {"0":[list(self.LatLong[self.LatLong["trajectory_id"] == traj]["location_label"]) for traj in trajs_token],"trajectory_number":[str(self.traj_id_dict[i]) for i in trajs_token]}
+            self.Dataset = pd.DataFrame(traj_dict,index=[str(self.traj_id_dict[i]) for i in trajs_token])
+            self.Dataset.to_csv("trajectories/"+ self.embedding + "_" + self.traj_data + "_trajs" + ".csv",index=False)
+
+            self.Dataset["trajectory_number"] = self.Dataset["trajectory_number"].apply(lambda x: str(x))
+
+            self.Traj_Number_Traj_id = pd.DataFrame({"0":trajs_token},index=[str(self.traj_id_dict[i]) for i in trajs_token])
+
+            self.Dataset_geo25 = copy(self.Dataset)
+
+            self.Dict_Geo25 = { geo25.upper():vector  for geo25,vector in zip(list(self.tokenizer_df['sensor'].values),np.array(self.embedding_matrix))}
+
+
+            self.Dataset["0"] = self.Dataset["0"].apply(lambda x:[ self.Dict_Geo25[geo25] if(geo25 in self.Dict_Geo25.keys()) else np.zeros((1,self.embedding_matrix.shape[1]))[0] for geo25 in x ]) 
+            self.Dataset["0"] = self.Dataset["0"].apply(lambda x : np.array(sum(x)/len(x)))
+
+
+
+
+    def traj_matrix_first_read(self):
+
+        matrice = listdir("./matrices")
+
+        if(self.embedding + "_" + self.traj_data  +"_cossine_matrix_trajs.csv" in matrice):
+
+            self.Cossine_Matrix = pd.read_csv("matrices/"  + self.embedding + "_" + self.traj_data  +"_cossine_matrix_trajs.csv")   
+            self.CM = pd.read_csv("matrices/"  + self.embedding + "_" + self.traj_data + "_cm_trajs.csv")
+            self.DTW_Matrix = pd.read_csv("matrices/"  + self.embedding + "_" + self.traj_data + "_dtw_matrix_trajs.csv")           
+            self.Edit_Matrix = pd.read_csv("matrices/" +  self.embedding + "_" + self.traj_data + "_edit_matrix_trajs.csv") 
+
+            self.query_index = np.arange(0,self.Cossine_Matrix.shape[0])
+
+            self.sts_id = []
+            
+            for index in self.tokenizer_df.index:
+                self.sts_id.append(index)
+
+            self.validation = False
+
                 
-            if((self.traj_data in file) and (self.embedding in file)):
-
-                self.traj_data_sample = file.split(".")[0]
-                self.LatLong_sample = pd.read_csv("data_samples/" + file) 
-                t_id_list_sample = sorted(list(set(self.LatLong_sample["trajectory_id"])))
-                self.traj_id_dict = {tid: self.traj_id_dict_all[tid] for tid in t_id_list_sample}
-                self.Objects_traj = sorted(list(self.traj_id_dict.values()))
-                self.obj_traj = self.Objects_traj[0]
-
-                trajs_token = sorted(self.traj_id_dict.keys())
-
-                self.Dataset = pd.read_csv("trajectories/" + self.traj_data_sample + "_trajs"+".csv") 
-                
-                self.Dataset["0"] = self.Dataset["0"].apply(lambda x : x.replace("[","").replace("]","").replace(",","").replace("\n","").replace("'",""))
-                self.Dataset["0"] = self.Dataset["0"].apply(lambda x : x.split())
-                self.Dataset["trajectory_number"] = self.Dataset["trajectory_number"].apply(lambda x: str(x))
-
-                self.Traj_Number_Traj_id = pd.DataFrame({"0":trajs_token},index=[str(self.traj_id_dict[i]) for i in trajs_token])
-
-                self.Dataset_geo25 = copy(self.Dataset)
-
-                self.Dict_Geo25 = { geo25.upper():vector  for geo25,vector in zip(list(self.tokenizer_df['sensor'].values),np.array(self.embedding_matrix))}
-
-
-                self.Dataset["0"] = self.Dataset["0"].apply(lambda x:[ self.Dict_Geo25[geo25] for geo25 in x ]) 
-                self.Dataset["0"] = self.Dataset["0"].apply(lambda x : np.array(sum(x)/len(x)))
-
-                
-                self.Cossine_Matrix = pd.read_csv("matrices/"  + self.traj_data_sample+"_cossine_matrix_trajs.csv")   
-                self.CM = pd.read_csv("matrices/"  + self.traj_data_sample+"_cm_trajs.csv")
-                self.DTW_Matrix = pd.read_csv("matrices/"  + self.traj_data_sample+"_dtw_matrix_trajs.csv")           
-                self.Edit_Matrix = pd.read_csv("matrices/" +  self.traj_data_sample+"_edit_matrix_trajs.csv") 
-
-                self.query_index = np.arange(0,self.Cossine_Matrix.shape[0])
-
-                for index in self.Dataset_geo25["0"].index:
-                    for s in self.Dataset_geo25["0"].loc[index]:
-                        self.sensors_traj_sample.append(s.lower())
-                    
-                self.sensors_traj_sample = list(set(self.sensors_traj_sample))
-
-                self.sts_id = []
-                
-                for index in self.tokenizer_df.index:
-                    if(self.tokenizer_df.sensor.loc[index].lower() in self.sensors_traj_sample):
-                        self.sts_id.append(index)
-
-                    elif(self.tokenizer_df.sensor.loc[index]=="[CSL]" or self.tokenizer_df.sensor.loc[index]=="[SEP]" or self.tokenizer_df.sensor.loc[index]=="[MASK]"):
-                        self.sts_id.append(index)
-
-                self.validation = False
-
-                break
-                
-    def data_sample_traj_matrix_first_creation(self):
-        
-        traj_data_sample = self.embedding + "_" + self.traj_data + "_sample"   
-        t_id_list_sample = sorted(sample(self.t_id_list,50)) 
-        
-        
-        time = []
-        lat = []
-        lon = []
-        location_label = []
-        trajectory_id = []
-
-        for i in range(self.LatLong.shape[0]):
-
-            if(self.LatLong["trajectory_id"].loc[i] in t_id_list_sample):
-
-                time.append(self.LatLong["time"].loc[i])
-                lat.append(self.LatLong["lat"].loc[i])
-                lon.append(self.LatLong["lon"].loc[i])
-                location_label.append(self.LatLong["location_label"].loc[i])
-                trajectory_id.append(self.LatLong["trajectory_id"].loc[i])
-
-
-        lat_long_sample_dict = {"trajectory_id":trajectory_id,"time":time, "lat":lat, "lon":lon,"location_label":location_label}
-        self.LatLong_sample = pd.DataFrame(lat_long_sample_dict)
-
-        
-        self.LatLong_sample.to_csv("data_samples/"+traj_data_sample+".csv",index=False)
-        self.traj_id_dict = {tid: self.traj_id_dict_all[tid] for tid in t_id_list_sample}
-        self.Objects_traj = sorted(list(self.traj_id_dict.values()))
-        self.obj_traj = self.Objects_traj[0]
-
-        trajs_token = sorted(self.traj_id_dict.keys())
-        traj_sample_dict = {"0":[list(self.LatLong_sample[self.LatLong_sample["trajectory_id"] == traj]["location_label"]) for traj in trajs_token],"trajectory_number":[str(self.traj_id_dict[i]) for i in trajs_token]}
-        self.Dataset = pd.DataFrame(traj_sample_dict,index=[str(self.traj_id_dict[i]) for i in trajs_token])
-        self.Dataset.to_csv("trajectories/"+traj_data_sample + "_trajs"+".csv",index=False)
-
-        self.Traj_Number_Traj_id = pd.DataFrame({"0":trajs_token},index=[str(self.traj_id_dict[i]) for i in trajs_token])
-
-        self.Dataset_geo25  = copy(self.Dataset)
-
-        self.Dict_Geo25 = { geo25.upper():vector  for geo25, vector in zip(list(self.tokenizer_df['sensor'].values),np.array(self.embedding_matrix))}
-        
-        
-        self.Dataset["0"] = self.Dataset["0"].apply(lambda x:[ self.Dict_Geo25[geo25] for geo25 in x ]) 
-        self.Dataset["0"] = self.Dataset["0"].apply(lambda x : np.array(sum(x)/len(x)))
+    def traj_matrix_first_creation(self):
 
         self.Dataset.index = [i for i in range(len(self.Dataset))]
-
+         
         dist_matrix_coss_traj = np.zeros((self.Dataset["0"].shape[0],self.Dataset["0"].shape[0]))
 
         for i in range(self.Dataset["0"].shape[0]):
@@ -445,22 +410,22 @@ class Intrinsic_Evaluation_Output:
         self.query_index = np.arange(0,self.Cossine_Matrix.shape[0])
 
         self.CM = copy(self.Cossine_Matrix)
-        self.CM.to_csv("matrices/" + traj_data_sample+"_cm_trajs.csv",index=False)
+        self.CM.to_csv("matrices/" + self.embedding + "_" + self.traj_data +"_cm_trajs.csv",index=False)
         
         for i in range(0,self.Cossine_Matrix.shape[0]):
 
             self.Cossine_Matrix.iloc[i,i] = np.nan 
             
-        self.Cossine_Matrix.to_csv("matrices/"  + traj_data_sample + "_cossine_matrix_trajs.csv",index=False)
+        self.Cossine_Matrix.to_csv("matrices/"  + self.embedding + "_" +self.traj_data + "_cossine_matrix_trajs.csv",index=False)
         
         
-        matrix_dist_dtw = np.zeros((len(t_id_list_sample),len(t_id_list_sample)), dtype='float16')
+        matrix_dist_dtw = np.zeros((len(self.t_id_list),len(self.t_id_list)), dtype='float16')
 
-        TJ_ID = t_id_list_sample
+        TJ_ID = self.t_id_list
 
         for i in range(len(TJ_ID)):
             for j in range(i,len(TJ_ID)):
-                matrix_dist_dtw[i][j] = dtw_distance(TJ_ID[i], TJ_ID[j], self.LatLong_sample)
+                matrix_dist_dtw[i][j] = dtw_distance(TJ_ID[i], TJ_ID[j], self.LatLong)
                 
         for i in reversed(range(len(TJ_ID))):
             for j in reversed(range(i)):
@@ -484,53 +449,97 @@ class Intrinsic_Evaluation_Output:
             self.Edit_Matrix.iloc[i,i] = np.nan
             
             
-        self.DTW_Matrix.to_csv("matrices/"  + traj_data_sample +"_dtw_matrix_trajs.csv",index=False)
-        self.Edit_Matrix.to_csv("matrices/" + traj_data_sample +"_edit_matrix_trajs.csv",index=False)
+        self.DTW_Matrix.to_csv("matrices/"  + self.embedding + "_" + self.traj_data +"_dtw_matrix_trajs.csv",index=False)
+        self.Edit_Matrix.to_csv("matrices/" + self.embedding + "_" + self.traj_data +"_edit_matrix_trajs.csv",index=False)
         
-        for index in self.Dataset_geo25["0"].index:
-            for s in self.Dataset_geo25["0"].loc[index]:
-                self.sensors_traj_sample.append(s.lower())
-            
-        self.sensors_traj_sample = list(set(self.sensors_traj_sample))
 
         self.sts_id = []
 
         for index in self.tokenizer_df.index:
-            if(self.tokenizer_df.sensor.loc[index].lower() in self.sensors_traj_sample):
-                self.sts_id.append(index)
+            self.sts_id.append(index)
 
-            elif(self.tokenizer_df.sensor.loc[index]=="[CSL]" or self.tokenizer_df.sensor.loc[index]=="[SEP]" or self.tokenizer_df.sensor.loc[index]=="[MASK]"):
-                self.sts_id.append(index)
       
     def sensor_matrix_first_read(self):
 
         if("Road_Matrix_sensors.csv" in listdir("./matrices")):
+
+            mat = listdir("./matrices")
+
+            if(self.embedding + "_cossine_matrix_sensors.csv" in mat):
         
                 self.Road_Matrix_sensors = pd.read_csv("matrices/Road_Matrix_sensors.csv")
                 self.Road_Matrix_sensors.index = [int(i) for i in self.Road_Matrix_sensors.columns]
+
+                self.Cossine_Matrix_sensors = pd.read_csv("matrices/" + self.embedding + "_cossine_matrix_sensors.csv")
+                self.CM_sensors = pd.read_csv("matrices/" + self.embedding + "_cm_sensors.csv")
+                self.Eucli_Matrix_sensors = pd.read_csv("matrices/" + self.embedding + "_euclidean_matrix_sensors.csv")
+                
+                self.Cossine_Matrix_sensors.index = [int(i) for i in self.Cossine_Matrix_sensors.index]
+                self.CM_sensors.index = [int(i) for i in self.CM_sensors.index]
+                self.CM_sensors.columns = [int(i) for i in self.CM_sensors.columns]
+                self.Eucli_Matrix_sensors.index = [int(i) for i in self.Eucli_Matrix_sensors.index]
+                
+                #if(not(self.without_road_matrix)):
+                columns_sensors = np.array(sorted(np.intersect1d(self.Eucli_Matrix_sensors.columns.values,np.intersect1d(self.Cossine_Matrix_sensors.columns.values, self.Road_Matrix_sensors.columns.values)),key=lambda x : int(x)))
+                index_sensors = np.intersect1d(self.Eucli_Matrix_sensors.index.values,np.intersect1d(self.Cossine_Matrix_sensors.index.values, self.Road_Matrix_sensors.index.values))
+                self.Road_Matrix_sensors = self.Road_Matrix_sensors.loc[index_sensors,columns_sensors]
+                
+                #self.LatLong["trajectory_id"] = self.LatLong.index
+                
+                if(101 in self.sts_id):
+                    self.sts_id.remove(101)
+                if(102 in self.sts_id):
+                    self.sts_id.remove(102)
+                if(103 in self.sts_id):
+                    self.sts_id.remove(103)
+
+                self.Objects_loc = self.sts_id
+                self.obj_loc = self.Objects_loc[0]
+                
+                self.validation_2 = False
             
         else:
-                
-            self.road_matrix_creation()
 
-        for file in listdir("./matrices"):
+            with self.intrinsic_evaluation_output:
+
+                self.intrinsic_evaluation_output.clear_output()
+
+                road_label = widgets.Label("The Road Matrix is ​​not in a folder, would you like to generate it (it may take a long time)?")
+
+                yes_button = widgets.Button(description="Yes", layout=widgets.Layout(width="100px"))
+                yes_button.style.button_color = "lightgray"
+                yes_button.on_click(self.road_matrix_yes)
+
+                no_button = widgets.Button(description="No", layout=widgets.Layout(width="100px"))
+                no_button.style.button_color = "lightgray"
+                no_button.on_click(self.road_matrix_no)
+
+                yes_no_box =  widgets.HBox([yes_button, self.spc1, no_button])
+
+                road_box = widgets.VBox([road_label, self.spc1, yes_no_box])
+
+                display(road_box)
+
+            mat = listdir("./matrices")
+
+            if(self.embedding + "_cossine_matrix_sensors.csv" in mat):
             
-            if((self.embedding in file) and not("sample" in file)):
                 
                 self.Cossine_Matrix_sensors = pd.read_csv("matrices/" + self.embedding + "_cossine_matrix_sensors.csv")
                 self.CM_sensors = pd.read_csv("matrices/" + self.embedding + "_cm_sensors.csv")
                 self.Eucli_Matrix_sensors = pd.read_csv("matrices/" + self.embedding + "_euclidean_matrix_sensors.csv")
                 
-                self.Cossine_Matrix_sensors.index = [int(i) for i in self.Cossine_Matrix_sensors.columns]
-                self.CM_sensors.index = [int(i) for i in self.CM_sensors.columns]
+                self.Cossine_Matrix_sensors.index = [int(i) for i in self.Cossine_Matrix_sensors.index]
+                self.CM_sensors.index = [int(i) for i in self.CM_sensors.index]
                 self.CM_sensors.columns = [int(i) for i in self.CM_sensors.columns]
-                self.Eucli_Matrix_sensors.index = [int(i) for i in self.Eucli_Matrix_sensors.columns]
+                self.Eucli_Matrix_sensors.index = [int(i) for i in self.Eucli_Matrix_sensors.index]
                 
+                #if(not(self.without_road_matrix)):
                 columns_sensors = np.array(sorted(np.intersect1d(self.Eucli_Matrix_sensors.columns.values,np.intersect1d(self.Cossine_Matrix_sensors.columns.values, self.Road_Matrix_sensors.columns.values)),key=lambda x : int(x)))
                 index_sensors = np.intersect1d(self.Eucli_Matrix_sensors.index.values,np.intersect1d(self.Cossine_Matrix_sensors.index.values, self.Road_Matrix_sensors.index.values))
                 self.Road_Matrix_sensors = self.Road_Matrix_sensors.loc[index_sensors,columns_sensors]
                 
-                self.LatLong["trajectory_id"] = self.LatLong.index
+                #self.LatLong["trajectory_id"] = self.LatLong.index
                 
                 if(101 in self.sts_id):
                     self.sts_id.remove(101)
@@ -544,9 +553,35 @@ class Intrinsic_Evaluation_Output:
                 
                 self.validation_2 = False
 
-                break
 
     def sensor_matrix_first_creation(self):
+
+        
+        if(isinstance(self.Road_Matrix_sensors,str)):
+            if("Road_Matrix_sensors.csv" in listdir("./matrices")):
+                self.Road_Matrix_sensors = pd.read_csv("matrices/Road_Matrix_sensors.csv")
+            else:
+
+                self.road_matrix_creation()
+                #with self.intrinsic_evaluation_output:
+
+                #    self.intrinsic_evaluation_output.clear_output()
+
+                #    road_label = widgets.Label("The Road Matrix is ​​not in a folder, would you like to generate it (it may take a long time)?")
+
+                #    yes_button = widgets.Button(description="Yes", layout=widgets.Layout(width="100px"))
+                #    yes_button.style.button_color = "lightgray"
+                #    yes_button.on_click(self.road_matrix_yes)
+
+                #    no_button = widgets.Button(description="No", layout=widgets.Layout(width="100px"))
+                #    no_button.style.button_color = "lightgray"
+                #    no_button.on_click(self.road_matrix_no)
+
+                #    yes_no_box =  widgets.HBox([yes_button, self.spc1, no_button])
+
+                #    road_box = widgets.VBox([road_label, self.spc1, yes_no_box])
+
+                #    display(road_box)
 
         dist_matrix_coss_sensor = np.zeros((len(self.sts_id),len(self.sts_id)))
         eucl_distance = np.zeros((len(self.sts_id),len(self.sts_id)))
@@ -556,26 +591,23 @@ class Intrinsic_Evaluation_Output:
                 dist_matrix_coss_sensor[i,j] = nltk.cluster.cosine_distance(np.array(self.embedding_matrix)[self.sts_id[i]-1],np.array(self.embedding_matrix)[self.sts_id[j]-1])
 
 
-        tokenizer_df_sample = self.tokenizer_df.loc[self.sts_id]
-
-
         lat_values = []
 
 
-        for i in tokenizer_df_sample.index:
+        for i in self.tokenizer_df.index:
 
             if(i not in [101,102,103] ):
-                lat_values.append(self.LL.loc[tokenizer_df_sample[tokenizer_df_sample["id"] == i]["sensor"].apply(lambda x : x.lower())]["lat"].values[0])
+                lat_values.append(self.LL.loc[self.tokenizer_df[self.tokenizer_df["id"] == i]["sensor"].apply(lambda x : x.lower())]["lat"].values[0])
 
             else:
                 lat_values.append("n")
 
         lon_values = []
 
-        for i in tokenizer_df_sample.index:
+        for i in self.tokenizer_df.index:
 
             if(i not in [101,102,103]):
-                lon_values.append(self.LL.loc[tokenizer_df_sample[tokenizer_df_sample["id"] == i]["sensor"].apply(lambda x : x.lower())]["lon"].values[0])
+                lon_values.append(self.LL.loc[self.tokenizer_df[self.tokenizer_df["id"] == i]["sensor"].apply(lambda x : x.lower())]["lon"].values[0])
 
             else:
                 lon_values.append("n")    
@@ -603,11 +635,16 @@ class Intrinsic_Evaluation_Output:
 
             self.Eucli_Matrix_sensors.iloc[i,i] = np.nan
 
+        self.CM_sensors= copy(self.Cossine_Matrix_sensors)
+        self.CM_sensors.columns = [int(i) for i in self.CM_sensors.columns]
+        self.CM_sensors.to_csv("matrices/" + self.embedding + "_cm_sensors.csv",index=False)
+
         self.Cossine_Matrix_sensors.columns = [str(i) for i in self.sts_id]
         self.Eucli_Matrix_sensors.columns = [str(i) for i in self.sts_id]
         self.Cossine_Matrix_sensors.index = self.sts_id
         self.Eucli_Matrix_sensors.index = self.sts_id
 
+        #if(not(self.without_road_matrix)):
         columns_sensors = np.array(sorted(np.intersect1d(self.Eucli_Matrix_sensors.columns.values,np.intersect1d(self.Cossine_Matrix_sensors.columns.values, self.Road_Matrix_sensors.columns.values)),key=lambda x : int(x)))
         index_sensors = np.intersect1d(self.Eucli_Matrix_sensors.index.values,np.intersect1d(self.Cossine_Matrix_sensors.index.values, self.Road_Matrix_sensors.index.values))
         
@@ -617,13 +654,9 @@ class Intrinsic_Evaluation_Output:
 
         self.Cossine_Matrix_sensors.to_csv("matrices/" + self.embedding + "_cossine_matrix_sensors.csv",index=False)
         self.Eucli_Matrix_sensors.to_csv("matrices/" + self.embedding + "_euclidean_matrix_sensors.csv",index=False)
-        
-        self.CM_sensors= copy(self.Cossine_Matrix_sensors)
-        self.CM_sensors.columns = [int(i) for i in self.CM_sensors.columns]
-        self.CM_sensors.to_csv("matrices/" + self.embedding + "_cm_sensors.csv",index=False)
-        
+    
 
-        self.LatLong["trajectory_id"] =  self.LatLong.index
+        #self.LatLong["trajectory_id"] =  self.LatLong.index
         
         if(101 in self.sts_id):
             self.sts_id.remove(101)
@@ -644,47 +677,46 @@ class Intrinsic_Evaluation_Output:
             display(widgets.Label("Generating Road Matrix ..."))
             
             id_road = [] 
-            sample_sensors = list(self.tokenizer_df.loc[self.sts_id]["sensor"].apply(lambda x : x.upper()).values)
+            sensors = list(self.tokenizer_df.loc[self.sts_id]["sensor"].apply(lambda x : x.upper()).values)
 
 
             for index in self.LL.index:
-                if(index.upper() in sample_sensors):
+                if(index.upper() in sensors):
                     id_road.append(index)
 
-            lat_long_sample = self.LL.loc[id_road]
+            lat_long = self.LL.loc[id_road]
 
-            south, west = lat_long_sample[['lat','lon']].min()
-            north, east = lat_long_sample[['lat','lon']].max()
+            south, west = lat_long[['lat','lon']].min()
+            north, east = lat_long[['lat','lon']].max()
 
             g = ox.graph_from_bbox(north, south, east, west, network_type='drive_service')
 
             id_remove = []
-            for index in lat_long_sample.index:
-                if(not(lat_long_sample.loc[index].nodeId in g.nodes)):      
+            for index in lat_long.index:
+                if(not(lat_long.loc[index].nodeId in g.nodes)):      
                     id_remove.append(index)
 
-            lat_long_sample = lat_long_sample.drop(id_remove)
+            lat_long = lat_long.drop(id_remove)
 
             id_w_duplicate = []
             node_id_w_duplicate = []
 
-            for index in lat_long_sample.index:
-                if(not(lat_long_sample.loc[index].nodeId in node_id_w_duplicate)):      
+            for index in lat_long.index:
+                if(not(lat_long.loc[index].nodeId in node_id_w_duplicate)):      
                     id_w_duplicate.append(index)
-                    node_id_w_duplicate.append(lat_long_sample.loc[index].nodeId)
+                    node_id_w_duplicate.append(lat_long.loc[index].nodeId)
 
-            lat_long_sample = lat_long_sample.loc[id_w_duplicate]
+            lat_long = lat_long.loc[id_w_duplicate]
 
-            lat_long_sample = lat_long_sample.sort_values(by=['token_id'])
+            lat_long = lat_long.sort_values(by=['token_id'])
 
-            net_dist = np.zeros((len(lat_long_sample.index.values),len(lat_long_sample.index.values)))
-            node_list = [lat_long_sample.loc[lat_long_sample.index[s]]['nodeId'] for s in range(len(lat_long_sample.index))]
+            net_dist = np.zeros((len(lat_long.index.values),len(lat_long.index.values)))
+            node_list = [lat_long.loc[lat_long.index[s]]['nodeId'] for s in range(len(lat_long.index))]
 
             results = []
 
             pairs = [(g,u,v) for u in node_list for v in node_list if u != v]
 
-            display("Olllla")
 
             for i in trange(len(pairs)):
 
@@ -709,8 +741,8 @@ class Intrinsic_Evaluation_Output:
                 net_dist[i][i] = np.nan
 
             df_dist = pd.DataFrame(net_dist)
-            df_dist.index = list(lat_long_sample.token_id)
-            df_dist.columns = list(lat_long_sample.token_id)
+            df_dist.index = list(lat_long.token_id)
+            df_dist.columns = list(lat_long.token_id)
 
             self.Road_Matrix_sensors = df_dist
             self.Road_Matrix_sensors.columns = [str(i) for i in self.Road_Matrix_sensors.columns]
@@ -722,25 +754,12 @@ class Intrinsic_Evaluation_Output:
     def data_traj_list_dict(self):
         
         self.LatLong   = pd.read_csv("data/"+self.traj_data+".csv") 
-
         self.t_id_list = []
-        Sensors = list(self.tokenizer_df["sensor"].apply(lambda x : x.upper()))
 
 
         for tid in list(set(self.LatLong["trajectory_id"])):
 
-            traj = list(self.LatLong[self.LatLong["trajectory_id"] == tid]["location_label"])
-
-            in_dict = True
-
-            for sensor in traj:
-
-                if(not(sensor in Sensors)):
-                    in_dict = False
-
-            if(in_dict):
-
-                self.t_id_list.append(tid)
+            self.t_id_list.append(tid)
 
         self.t_id_list = sorted(self.t_id_list)
         self.traj_id_dict_all = {self.t_id_list[i]: i for i in range(len(self.t_id_list))}
@@ -748,119 +767,87 @@ class Intrinsic_Evaluation_Output:
 
 
 
-    def data_sample_traj_matrix_read(self):                                                                                                                                                                                                                                                                                       
-        
-        for file in listdir("./data_samples"):
-            
-            if(self.traj_data in file and self.embedding in file):
+    def traj_matrix_read(self):    
 
-                self.traj_data_sample = file.split(".")[0]
-                self.LatLong_sample = pd.read_csv("data_samples/" + file) 
-                t_id_list_sample = sorted(list(set(self.LatLong_sample["trajectory_id"])))
-                self.traj_id_dict = {tid: self.traj_id_dict_all[tid] for tid in t_id_list_sample}
-                self.Objects_traj = sorted(list(self.traj_id_dict.values()))
-                self.obj_traj = self.Objects_traj[0]
+        trajs = listdir("./trajectories")
 
-                with self.select_location_dropdown_output:
+        if(self.embedding + "_" + self.traj_data + "_trajs" + ".csv" in trajs):                                                                                                                                                                                                                                                                                   
 
-                    self.select_trajectory_dropdown.options = self.Objects_traj
-                    self.select_trajectory_dropdown.value = self.obj_traj
+            self.LatLong = pd.read_csv("data/" + self.traj_data + ".csv") 
+            t_id_list = sorted(list(set(self.LatLong["trajectory_id"])))
+            self.traj_id_dict = {tid: self.traj_id_dict_all[tid] for tid in t_id_list}
 
-                trajs_token = sorted(self.traj_id_dict.keys())
+            self.Objects_traj = sorted(list(self.traj_id_dict.values()))
+            self.obj_traj = self.Objects_traj[0]
 
-                self.Dataset = pd.read_csv("trajectories/" + self.traj_data_sample + "_trajs"+".csv") 
-
-                self.Dataset["0"] = self.Dataset["0"].apply(lambda x : x.replace("[","").replace("]","").replace(",","").replace("\n","").replace("'",""))
-                self.Dataset["0"] = self.Dataset["0"].apply(lambda x : x.split())
-                self.Dataset["trajectory_number"] = self.Dataset["trajectory_number"].apply(lambda x: str(x))
-
-                self.Traj_Number_Traj_id = pd.DataFrame({"0":trajs_token},index=[str(self.traj_id_dict[i]) for i in trajs_token])
-
-                self.Dataset_geo25 = copy(self.Dataset)
-                self.Dict_Geo25 = { geo25.upper():vector  for geo25,vector in zip(list(self.tokenizer_df['sensor'].values),np.array(self.embedding_matrix))}
-
-                self.Dataset["0"] = self.Dataset["0"].apply(lambda x:[ self.Dict_Geo25[geo25] for geo25 in x ]) 
-                self.Dataset["0"] = self.Dataset["0"].apply(lambda x : np.array(sum(x)/len(x)))
-
-
-                self.Cossine_Matrix = pd.read_csv("matrices/" +  self.traj_data_sample + "_cossine_matrix_trajs.csv")
-                self.CM = pd.read_csv("matrices/" + self.traj_data_sample + "_cm_trajs.csv")
-                self.DTW_Matrix = pd.read_csv("matrices/" + self.traj_data_sample + "_dtw_matrix_trajs.csv") 
-                self.Edit_Matrix = pd.read_csv("matrices/" +  self.traj_data_sample + "_edit_matrix_trajs.csv") 
-
-                for index in self.Dataset_geo25["0"].index:
-                    for s in self.Dataset_geo25["0"].loc[index]:
-                        self.sensors_traj_sample.append(s.lower())
-
-                self.sensors_traj_sample = list(set(self.sensors_traj_sample))
-                self.sts_id  = []
-
-                for index in self.tokenizer_df.index:
-                    if(self.tokenizer_df.sensor.loc[index].lower() in self.sensors_traj_sample):
-                        self.sts_id.append(index)
-
-                    elif(self.tokenizer_df.sensor.loc[index]=="[CSL]" or self.tokenizer_df.sensor.loc[index]=="[SEP]" or self.tokenizer_df.sensor.loc[index]=="[MASK]"):
-                        self.sts_id.append(index)
-                
-                self.validation = False
-                break
-                      
-    def data_sample_traj_matrix_creation(self):
-        
-        self.traj_data_sample = self.embedding + "_" + self.traj_data + "_sample"   
-        t_id_list_sample = sorted(sample(self.t_id_list,50)) 
-
-
-        time = []
-        lat = []
-        lon = []
-        location_label = []
-        trajectory_id = []
-
-        for i in range(self.LatLong.shape[0]):
-
-            if(self.LatLong["trajectory_id"].loc[i] in t_id_list_sample):
-
-                time.append(self.LatLong["time"].loc[i])
-                lat.append(self.LatLong["lat"].loc[i])
-                lon.append(self.LatLong["lon"].loc[i])
-                location_label.append(self.LatLong["location_label"].loc[i])
-                trajectory_id.append(self.LatLong["trajectory_id"].loc[i])
-
-
-        lat_long_2_sample_dict = {"trajectory_id":trajectory_id,"time":time, "lat":lat, "lon":lon,"location_label":location_label}
-        self.LatLong_sample = pd.DataFrame(lat_long_2_sample_dict)
-
-
-        self.LatLong_sample.to_csv("data_samples/"+self.traj_data_sample+".csv",index=False)
-        self.traj_id_dict = {tid: self.traj_id_dict_all[tid] for tid in t_id_list_sample}
-        self.Objects_traj = sorted(list(self.traj_id_dict.values()))
-        self.obj_traj = self.Objects_traj[0]
-
-        with self.select_location_dropdown_output:
+            with self.select_location_dropdown_output:
 
                 self.select_trajectory_dropdown.options = self.Objects_traj
-                
+                self.select_trajectory_dropdown.value = self.obj_traj
 
-        trajs_token = sorted(self.traj_id_dict.keys())
-        traj_sample_dict = {"0":[list(self.LatLong_sample[self.LatLong_sample["trajectory_id"] == traj]["location_label"]) for traj in trajs_token], "trajectory_number":[str(self.traj_id_dict[i]) for i in trajs_token]}
-        self.Dataset = pd.DataFrame(traj_sample_dict,index=[str(self.traj_id_dict[i]) for i in trajs_token])
-        self.Dataset.to_csv("trajectories/"+ self.traj_data_sample + "_trajs"+".csv",index=False)
+            trajs_token = sorted(self.traj_id_dict.keys())
+
+            self.Dataset = pd.read_csv("trajectories/" + self.embedding + "_" + self.traj_data + "_trajs" + ".csv") 
+
+            self.Dataset["0"] = self.Dataset["0"].apply(lambda x : x.replace("[","").replace("]","").replace(",","").replace("\n","").replace("'",""))
+            self.Dataset["0"] = self.Dataset["0"].apply(lambda x : x.split())
+            self.Dataset["trajectory_number"] = self.Dataset["trajectory_number"].apply(lambda x: str(x))
+
+            self.Traj_Number_Traj_id = pd.DataFrame({"0":trajs_token},index=[str(self.traj_id_dict[i]) for i in trajs_token])
+
+            self.Dataset_geo25 = copy(self.Dataset)
+            self.Dict_Geo25 = { geo25.upper():vector  for geo25,vector in zip(list(self.tokenizer_df['sensor'].values),np.array(self.embedding_matrix))}
+
+            self.Dataset["0"] = self.Dataset["0"].apply(lambda x:[ self.Dict_Geo25[geo25] if(geo25 in self.Dict_Geo25.keys()) else np.zeros((1,self.embedding_matrix.shape[1]))[0] for geo25 in x ]) 
+            self.Dataset["0"] = self.Dataset["0"].apply(lambda x : np.array(sum(x)/len(x)))
+
+
+            self.Cossine_Matrix = pd.read_csv("matrices/" +  self.embedding + "_" + self.traj_data + "_cossine_matrix_trajs.csv")
+            self.CM = pd.read_csv("matrices/" + self.embedding + "_" + self.traj_data + "_cm_trajs.csv")
+            self.DTW_Matrix = pd.read_csv("matrices/" + self.embedding + "_" + self.traj_data + "_dtw_matrix_trajs.csv") 
+            self.Edit_Matrix = pd.read_csv("matrices/" +  self.embedding + "_" + self.traj_data + "_edit_matrix_trajs.csv") 
+
+            self.sts_id  = []
+
+            for index in self.tokenizer_df.index:
+                self.sts_id.append(index)
+            
+            self.validation = False
+                             
+    def traj_matrix_creation(self):
+
+        trajs = listdir("./trajectories")
+
+        if(not(self.embedding + "_" + self.traj_data + "_trajs" + ".csv" in trajs)):
+
+            self.LatLong = pd.read_csv("data/" + self.traj_data + ".csv") 
+            t_id_list = sorted(list(set(self.LatLong["trajectory_id"])))
+            self.traj_id_dict = {tid: self.traj_id_dict_all[tid] for tid in t_id_list}
+            self.Objects_traj = sorted(list(self.traj_id_dict.values()))
+            self.obj_traj = self.Objects_traj[0]
+            trajs_token = sorted(self.traj_id_dict.keys())
+
+            traj_dict = {"0":[list(self.LatLong[self.LatLong["trajectory_id"] == traj]["location_label"]) for traj in trajs_token],"trajectory_number":[str(self.traj_id_dict[i]) for i in trajs_token]}
+            self.Dataset = pd.DataFrame(traj_dict,index=[str(self.traj_id_dict[i]) for i in trajs_token])
+            self.Dataset.to_csv("trajectories/"+ self.embedding + "_" + self.traj_data + "_trajs"+".csv",index=False)
+
+
+        self.Dataset = pd.read_csv("trajectories/" + self.embedding + "_" + self.traj_data + "_trajs" + ".csv") 
+        self.Dataset["0"] = self.Dataset["0"].apply(lambda x : x.replace("[","").replace("]","").replace(",","").replace("\n","").replace("'",""))
+        self.Dataset["0"] = self.Dataset["0"].apply(lambda x : x.split())
+        self.Dataset["trajectory_number"] = self.Dataset["trajectory_number"].apply(lambda x: str(x))
 
         self.Traj_Number_Traj_id = pd.DataFrame({"0":trajs_token},index=[str(self.traj_id_dict[i]) for i in trajs_token])
 
         self.Dataset_geo25 = copy(self.Dataset)
-
         self.Dict_Geo25 = { geo25.upper():vector  for geo25,vector in zip(list(self.tokenizer_df['sensor'].values),np.array(self.embedding_matrix))}
 
 
-        self.Dataset["0"] = self.Dataset["0"].apply(lambda x:[ self.Dict_Geo25[geo25] for geo25 in x ]) 
+        self.Dataset["0"] = self.Dataset["0"].apply(lambda x:[ self.Dict_Geo25[geo25] if(geo25 in self.Dict_Geo25.keys()) else np.zeros((1,self.embedding_matrix.shape[1]))[0] for geo25 in x ]) 
         self.Dataset["0"] = self.Dataset["0"].apply(lambda x : np.array(sum(x)/len(x)))
 
-
         self.Dataset.index = [i for i in range(len(self.Dataset))]
-
-
+       
         dist_matrix_coss_traj = np.zeros((self.Dataset["0"].shape[0],self.Dataset["0"].shape[0]))
 
         for i in range(self.Dataset["0"].shape[0]):
@@ -874,22 +861,22 @@ class Intrinsic_Evaluation_Output:
 
 
         self.CM = copy(self.Cossine_Matrix)
-        self.CM.to_csv("matrices/" +  self.traj_data_sample + "_cm_trajs.csv",index=False)
+        self.CM.to_csv("matrices/" + self.embedding + "_" + self.traj_data + "_cm_trajs.csv",index=False)
 
         for i in range(0,self.Cossine_Matrix.shape[0]):
 
             self.Cossine_Matrix.iloc[i,i] = np.nan 
 
-        self.Cossine_Matrix.to_csv("matrices/" +  self.traj_data_sample + "_cossine_matrix_trajs.csv",index=False)
+        self.Cossine_Matrix.to_csv("matrices/" + self.embedding + "_" + self.traj_data + "_cossine_matrix_trajs.csv",index=False)
 
 
-        matrix_dist_dtw = np.zeros((len(t_id_list_sample),len(t_id_list_sample)), dtype='float16')
+        matrix_dist_dtw = np.zeros((len(self.t_id_list),len(self.t_id_list)), dtype='float16')
 
-        TJ_ID = t_id_list_sample
+        TJ_ID = self.t_id_list
 
         for i in range(len(TJ_ID)):
             for j in range(i,len(TJ_ID)):
-                matrix_dist_dtw[i][j] = dtw_distance(TJ_ID[i], TJ_ID[j], self.LatLong_sample)
+                matrix_dist_dtw[i][j] = dtw_distance(TJ_ID[i], TJ_ID[j], self.LatLong)
 
         for i in reversed(range(len(TJ_ID))):
             for j in reversed(range(i)):
@@ -914,78 +901,120 @@ class Intrinsic_Evaluation_Output:
             self.Edit_Matrix.iloc[i,i] = np.nan
 
 
-        self.DTW_Matrix.to_csv("matrices/" + self.traj_data_sample + "_dtw_matrix_trajs.csv",index=False)
-        self.Edit_Matrix.to_csv("matrices/" +  self.traj_data_sample + "_edit_matrix_trajs.csv",index=False)
+        self.DTW_Matrix.to_csv("matrices/" + self.embedding + "_" + self.traj_data + "_dtw_matrix_trajs.csv",index=False)
+        self.Edit_Matrix.to_csv("matrices/" +  self.embedding + "_" + self.traj_data + "_edit_matrix_trajs.csv",index=False)
 
-        for index in self.Dataset_geo25["0"].index:
-            for s in self.Dataset_geo25["0"].loc[index]:
-                self.sensors_traj_sample.append(s.lower())
-
-        self.sensors_traj_sample = list(set(self.sensors_traj_sample))
 
         self.sts_id  = []
         for index in self.tokenizer_df.index:
-            if(self.tokenizer_df.sensor.loc[index].lower() in self.sensors_traj_sample):
-                self.sts_id.append(index)
+            self.sts_id.append(index)
 
-            elif(self.tokenizer_df.sensor.loc[index]=="[CSL]" or self.tokenizer_df.sensor.loc[index]=="[SEP]" or self.tokenizer_df.sensor.loc[index]=="[MASK]"):
-                self.sts_id.append(index)
 
     def sensor_matrix_read(self):
-        
-        for file in listdir("./matrices"):
 
-            if((self.embedding in file) and not("sample" in file)):
+        mat = listdir("./matrices")
 
-                self.Cossine_Matrix_sensors = pd.read_csv("matrices/" + self.embedding + "_cossine_matrix_sensors.csv")
-                self.CM_sensors = pd.read_csv("matrices/" + self.embedding + "_cm_sensors.csv")
-                self.Eucli_Matrix_sensors = pd.read_csv("matrices/" + self.embedding + "_euclidean_matrix_sensors.csv")
+        if(self.embedding + "_cossine_matrix_sensors.csv" in mat):
 
-                self.Cossine_Matrix_sensors.index = [int(i) for i in self.Cossine_Matrix_sensors.columns]
-                self.CM_sensors.index = [int(i) for i in self.CM_sensors.columns]
-                self.CM_sensors.columns = [int(i) for i in self.CM_sensors.columns]
-                self.Eucli_Matrix_sensors.index = [int(i) for i in self.Eucli_Matrix_sensors.columns]
+            if(isinstance(self.Road_Matrix_sensors,str)):
+                if("Road_Matrix_sensors.csv" in listdir("./matrices")):
+                    self.Road_Matrix_sensors = pd.read_csv("matrices/Road_Matrix_sensors.csv")
+                else:
 
-                columns_sensors = np.array(sorted(np.intersect1d(self.Eucli_Matrix_sensors.columns.values,np.intersect1d(self.Cossine_Matrix_sensors.columns.values, self.Road_Matrix_sensors.columns.values)),key=lambda x : int(x)))
-                index_sensors = np.intersect1d(self.Eucli_Matrix_sensors.index.values,np.intersect1d(self.Cossine_Matrix_sensors.index.values, self.Road_Matrix_sensors.index.values))
+                    self.road_matrix_creation()
+                    #with self.intrinsic_evaluation_output:
 
-                self.Road_Matrix_sensors = self.Road_Matrix_sensors.loc[index_sensors,columns_sensors]
+                    #self.intrinsic_evaluation_output.clear_output()
 
-                if(101 in self.sts_id):
-                    self.sts_id.remove(101)
-                if(102 in self.sts_id):
-                    self.sts_id.remove(102)
-                if(103 in self.sts_id):
-                    self.sts_id.remove(103)
+                    #road_label = widgets.Label("The Road Matrix is ​​not in a folder, would you like to generate it (it may take a long time)?")
 
-                self.LatLong["trajectory_id"] = self.LatLong.index
+                    #yes_button = widgets.Button(description="Yes", layout=widgets.Layout(width="100px"))
+                    #yes_button.style.button_color = "lightgray"
+                    #yes_button.on_click(self.road_matrix_yes)
 
-                self.Objects_loc = self.sts_id
-                self.obj_loc = self.Objects_loc[0]
+                    #no_button = widgets.Button(description="No", layout=widgets.Layout(width="100px"))
+                    #no_button.style.button_color = "lightgray"
+                    #no_button.on_click(self.road_matrix_no)
 
-                self.validation_2 = False
-                break
+                    #yes_no_box =  widgets.HBox([yes_button, self.spc1, no_button])
+
+                    #road_box = widgets.VBox([road_label, self.spc1, yes_no_box])
+
+                    #display(road_box)
+
+            self.Cossine_Matrix_sensors = pd.read_csv("matrices/" + self.embedding + "_cossine_matrix_sensors.csv")
+            self.CM_sensors = pd.read_csv("matrices/" + self.embedding + "_cm_sensors.csv")
+            self.Eucli_Matrix_sensors = pd.read_csv("matrices/" + self.embedding + "_euclidean_matrix_sensors.csv")
+
+            self.Cossine_Matrix_sensors.index = [int(i) for i in self.Cossine_Matrix_sensors.index]
+            self.CM_sensors.index = [int(i) for i in self.CM_sensors.index]
+            self.CM_sensors.columns = [int(i) for i in self.CM_sensors.columns]
+            self.Eucli_Matrix_sensors.index = [int(i) for i in self.Eucli_Matrix_sensors.index]
+
+            #if(not(self.without_road_matrix)):
+            columns_sensors = np.array(sorted(np.intersect1d(self.Eucli_Matrix_sensors.columns.values,np.intersect1d(self.Cossine_Matrix_sensors.columns.values, self.Road_Matrix_sensors.columns.values)),key=lambda x : int(x)))
+            index_sensors = np.intersect1d(self.Eucli_Matrix_sensors.index.values,np.intersect1d(self.Cossine_Matrix_sensors.index.values, self.Road_Matrix_sensors.index.values))
+
+            self.Road_Matrix_sensors = self.Road_Matrix_sensors.loc[index_sensors,columns_sensors]
+
+            if(101 in self.sts_id):
+                self.sts_id.remove(101)
+            if(102 in self.sts_id):
+                self.sts_id.remove(102)
+            if(103 in self.sts_id):
+                self.sts_id.remove(103)
+
+            #self.LatLong["trajectory_id"] = self.LatLong.index
+
+            self.Objects_loc = self.sts_id
+            self.obj_loc = self.Objects_loc[0]
+
+            self.validation_2 = False
               
     def sensor_matrix_creation(self):
-        
+
+        if(isinstance(self.Road_Matrix_sensors,str)):
+            if("Road_Matrix_sensors.csv" in listdir("./matrices")):
+                self.Road_Matrix_sensors = pd.read_csv("matrices/Road_Matrix_sensors.csv")
+            else:
+
+                self.road_matrix_creation()
+                #with self.intrinsic_evaluation_output:
+
+                #    self.intrinsic_evaluation_output.clear_output()
+
+                #    road_label = widgets.Label("The Road Matrix is ​​not in a folder, would you like to generate it (it may take a long time)?")
+
+                #    yes_button = widgets.Button(description="Yes", layout=widgets.Layout(width="100px"))
+                #    yes_button.style.button_color = "lightgray"
+                #    yes_button.on_click(self.road_matrix_yes)
+
+                #    no_button = widgets.Button(description="No", layout=widgets.Layout(width="100px"))
+                #    no_button.style.button_color = "lightgray"
+                #    no_button.on_click(self.road_matrix_no)
+
+                #    yes_no_box =  widgets.HBox([yes_button, self.spc1, no_button])
+
+                #    road_box = widgets.VBox([road_label, self.spc1, yes_no_box])
+
+                #    display(road_box)
+    
         dist_matrix_coss_sensor = np.zeros((len(self.sts_id),len(self.sts_id)))
         eucl_distance = np.zeros((len(self.sts_id),len(self.sts_id)))
+
 
         for i in range(len(self.sts_id)):
             for j in range(len(self.sts_id)):
                 dist_matrix_coss_sensor[i,j] = nltk.cluster.cosine_distance(np.array(self.embedding_matrix)[self.sts_id[i]-1],np.array(self.embedding_matrix)[self.sts_id[j]-1])
 
 
-        tokenizer_df_sample = self.tokenizer_df.loc[self.sts_id]
-
-
         lat_values = []
 
 
-        for i in tokenizer_df_sample.index:
+        for i in self.tokenizer_df.index:
 
             if(i not in [101,102,103] ):
-                lat_values.append(self.LL.loc[tokenizer_df_sample[tokenizer_df_sample["id"] == i]["sensor"].apply(lambda x : x.lower())]["lat"].values[0])
+                lat_values.append(self.LL.loc[self.tokenizer_df[self.tokenizer_df["id"] == i]["sensor"].apply(lambda x : x.lower())]["lat"].values[0])
 
             else:
 
@@ -993,17 +1022,17 @@ class Intrinsic_Evaluation_Output:
 
         lon_values = []
 
-        for i in tokenizer_df_sample.index:
+        for i in self.tokenizer_df.index:
 
             if(i not in [101,102,103]):
 
-                lon_values.append(self.LL.loc[tokenizer_df_sample[tokenizer_df_sample["id"] == i]["sensor"].apply(lambda x : x.lower())]["lon"].values[0])
+                lon_values.append(self.LL.loc[self.tokenizer_df[self.tokenizer_df["id"] == i]["sensor"].apply(lambda x : x.lower())]["lon"].values[0])
 
             else:
 
                 lon_values.append("n")    
 
-
+    
         for i in range(len(lat_values)):
             for j in range(len(lat_values)):
                 if((lat_values[i] != "n") and (lat_values[j] != "n") ):     
@@ -1023,10 +1052,16 @@ class Intrinsic_Evaluation_Output:
 
             self.Eucli_Matrix_sensors.iloc[i,i] = np.nan
 
+        self.CM_sensors = copy(self.Cossine_Matrix_sensors)
+        self.CM_sensors.columns = [int(i) for i in self.CM_sensors.columns]
+        self.CM_sensors.to_csv("matrices/" + self.embedding + "_cm_sensors.csv",index=False)
+
         self.Cossine_Matrix_sensors.columns = [str(i) for i in self.sts_id]
         self.Eucli_Matrix_sensors.columns = [str(i) for i in self.sts_id]
         self.Cossine_Matrix_sensors.index = self.sts_id
         self.Eucli_Matrix_sensors.index = self.sts_id
+
+        #if(not(self.without_road_matrix)):
 
         columns_sensors = np.array(sorted(np.intersect1d(self.Eucli_Matrix_sensors.columns.values,np.intersect1d(self.Cossine_Matrix_sensors.columns.values, self.Road_Matrix_sensors.columns.values)),key=lambda x : int(x)))
         index_sensors = np.intersect1d(self.Eucli_Matrix_sensors.index.values,np.intersect1d(self.Cossine_Matrix_sensors.index.values, self.Road_Matrix_sensors.index.values))
@@ -1040,12 +1075,9 @@ class Intrinsic_Evaluation_Output:
         self.Cossine_Matrix_sensors.to_csv("matrices/" + self.embedding + "_cossine_matrix_sensors.csv",index=False)
         self.Eucli_Matrix_sensors.to_csv("matrices/" + self.embedding + "_euclidean_matrix_sensors.csv",index=False)
 
-        self.CM_sensors = copy(self.Cossine_Matrix_sensors)
-        self.CM_sensors.columns = [int(i) for i in self.CM_sensors.columns]
-        self.CM_sensors.to_csv("matrices/" + self.embedding + "_cm_sensors.csv",index=False)
 
 
-        self.LatLong["trajectory_id"] = self.LatLong.index
+        #self.LatLong["trajectory_id"] = self.LatLong.index
 
 
         if(101 in self.sts_id):
@@ -1075,11 +1107,11 @@ class Intrinsic_Evaluation_Output:
                 
                 self.data_traj_list_dict()
                 
-                self.data_sample_traj_matrix_read()
+                self.traj_matrix_read()
                 
                 if(self.validation):
             
-                    self.data_sample_traj_matrix_creation()
+                    self.traj_matrix_creation()
 
                 else:
 
@@ -1211,21 +1243,19 @@ class Intrinsic_Evaluation_Output:
                     neighborhood_topk.append((self.CM[i][traj_matrix_index], i))
 
                 neighborhood_topk_index = sorted(neighborhood_topk)
-                
 
                 neighborhood_topk_index = neighborhood_topk_index[0:k+1]
                 
-            
                 
                 trajectories = [self.Dataset["trajectory_number"].loc[nb[1]] for nb in neighborhood_topk_index]
                 
 
                 trajectories_id = list(self.Traj_Number_Traj_id["0"].loc[[tj for tj in trajectories]])
 
-                trajectories_df = pd.concat([filters.by_label(self.LatLong_sample, value = tj, label_name = "trajectory_id") for tj in trajectories_id],axis=0)
                 
-                trajectories_df['trajectory_id'] = trajectories_df['trajectory_id'].apply(lambda x : "Trajectory : "+str(self.traj_id_dict[x]))
+                trajectories_df = pd.concat([filters.by_label(self.LatLong, value = tj, label_name = "trajectory_id") for tj in trajectories_id],axis=0)
 
+                trajectories_df['trajectory_id'] = trajectories_df['trajectory_id'].apply(lambda x : "Trajectory : "+str(self.traj_id_dict[x]))
 
                 move_df = MoveDataFrame(data= trajectories_df, latitude="lat", longitude="lon", datetime="time", traj_id='trajectory_id')
                 
@@ -1247,18 +1277,16 @@ class Intrinsic_Evaluation_Output:
             cossine_matrix_s = self.CM_sensors.to_numpy() 
 
             for i in range(cossine_matrix_s.shape[0]):
-                neighborhood_topk_s.append((cossine_matrix_s[i][self.sts_id.index(int(self.obj_loc))], self.sts_id[i])) 
+                neighborhood_topk_s.append((cossine_matrix_s[i][self.sts_id.index(int(self.obj_loc))], i)) 
 
             neighborhood_topk_s_index = sorted(neighborhood_topk_s)
-
             neighborhood_topk_s_index = neighborhood_topk_s_index[0:int(self.topk_loc)+1]
 
-
-            closest_labels = self.tokenizer_df.loc[[n[1] for n in neighborhood_topk_s_index], :]
+            closest_labels = self.tokenizer_df.loc[[n[1] + 1 for n in neighborhood_topk_s_index], :]
             aux_cl = closest_labels['sensor'].apply(lambda x : x.lower())
 
             closest_sensor = self.LL.loc[aux_cl]
-            closest_sensor['id'] = ["Location: "+str(n[1]) for n in neighborhood_topk_s_index]
+            closest_sensor['id'] = ["Location: "+str(n[1] + 1) for n in neighborhood_topk_s_index]
             closest_sensor['datetime'] = 0.0
 
 
