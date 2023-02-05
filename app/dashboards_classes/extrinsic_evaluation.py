@@ -25,9 +25,12 @@ class Extrinsic_Evaluation_Output:
         self.model_data_df = pd.read_csv("Model#Data.csv")
         self.models_names = list(self.model_data_df.Model)
 
+
+        # Screen to choose models
         self.select_mutiples_models = widgets.SelectMultiple(options=self.models_names + [''],value=[''] ,description='Models:', layout= widgets.Layout(width="420px",height="140px"),disabled=False)  
         self.select_mutiples_models_output = out(self.select_mutiples_models)    
         
+        # Button to get the model's extrinsic statistics
         self.extrinsic_evaluation_button = widgets.Button(description="Evaluation", layout=widgets.Layout(width="100px"))
         self.extrinsic_evaluation_button.style.button_color = "lightgray"
         self.extrinsic_evaluation_button.on_click(self.show_accuracy)

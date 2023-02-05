@@ -51,11 +51,14 @@ class Intrinsic_Evaluation_Output:
 
         self.text_dataset.observe(self.on_change_traj_data,names="value")
 
+        # Screen to select the dataset (lat_lon) linked to the chosen embedding
         self.text_dataset_out = out(self.text_dataset)
 
         self.embedding_text = widgets.Label("Select Embedding")
         self.embedding_choice = widgets.Dropdown(description='',layout=widgets.Layout(width="150px"),options=self.Emb_list,value=self.Emb_list[0])
         self.embedding_choice.observe(self.on_change_embedding_choice, names="value")
+
+        # Dropdown used to choose the embedding
         self.embedding_choice_out = out(self.embedding_choice)
 
         self.spc = widgets.Label("")
@@ -105,16 +108,23 @@ class Intrinsic_Evaluation_Output:
         self.validation_2 = True
         #self.without_road_matrix = False
 
+        
+        # If there is no link between embedding and datasets of type lat_long
+
         if(len(list(self.Emb_df.Emb))==0):
             
             self.embedding_not_linked()
                
+        # If there is link between embedding and datasets of type lat_long  
+             
         elif(len(list(self.Emb_df.Emb))>1):
         
             self.embedding_linked()
             
             self.traj_matrix_first_read()
             
+            # If searching for trajectory distance matrices yielded nothing, then creation of the matrices will is enabled
+
             if(self.validation):
             
                 self.traj_matrix_first_creation()
@@ -125,6 +135,8 @@ class Intrinsic_Evaluation_Output:
 
 
             self.sensor_matrix_first_read()
+
+            # If searching for location distance matrices yielded nothing, then creation of the matrices will is enabled
             
             if(self.validation_2):
                 
@@ -148,37 +160,49 @@ class Intrinsic_Evaluation_Output:
         self.out_topk_loc.layout = widgets.Layout(width = "825px", border='solid 2.0px white', margin='0px 10px 10px 10px', padding='5px 5px 5px 5px')
         
         
+        
         self.select_trajectory_label = widgets.Label("Select Trajectory")
         self.select_trajectory_dropdown = widgets.Dropdown(description='',options=self.Objects_traj,layout=widgets.Layout(width="150px"))
         self.select_trajectory_dropdown.observe(self.on_change_object_traj,names="value")
+
+        # Trajectory dropdown for top-k plot
         self.select_trajectory_dropdown_output = out(self.select_trajectory_dropdown)
         
         self.select_location_label = widgets.Label("Select Loacation")
         self.select_location_dropdown = widgets.Dropdown(description='',options=self.Objects_loc,layout=widgets.Layout(width="150px"))
         self.select_location_dropdown.observe(self.on_change_object_loc,names="value")
+
+        # Location dropdown for top-k plot
         self.select_location_dropdown_output = out(self.select_location_dropdown)
 
+
+        # Number of similar trajectories
         self.top_k_trajectory_label = widgets.Label("Top-k")
         self.top_k_trajectory_text = widgets.Text(description='',layout=widgets.Layout(width="60px"))
         self.top_k_trajectory_text.observe(self.on_change_topk_traj,names="value")
         
+        # Number of similar location
         self.top_k_location_label = widgets.Label("Top-k")
         self.top_k_location_text = widgets.Text(description='',layout=widgets.Layout(width="60px"))
         self.top_k_location_text.observe(self.on_change_topk_loc,names="value")
 
-
+        # Button to plot the k similar trajectories
         self.top_k_trajectory_button = widgets.Button(description="Plot", layout= widgets.Layout(width="60px"))
         self.top_k_trajectory_button.on_click(self.traj_topk_plot)
         self.top_k_trajectory_button.style.button_color = "lightgray"
         
+        
+        # Button to plot the k similar locations
         self.top_k_location_button = widgets.Button(description="Plot", layout= widgets.Layout(width="60px"))
         self.top_k_location_button.on_click(self.loc_topk_plot)
         self.top_k_location_button.style.button_color = "lightgray"
         
+        # Button to plot the mrr to the trajectories
         self.mrr_trajectory_plot_button = widgets.Button(description="Plot", layout= widgets.Layout(width="60px"))
         self.mrr_trajectory_plot_button.on_click(self.traj_plot_mrr)
         self.mrr_trajectory_plot_button.style.button_color = "lightgray"
         
+        # Button to plot the mrr to the locations
         mrr_location_plot_button = widgets.Button(description="Plot", layout=widgets.Layout(width="60px")) 
         mrr_location_plot_button.on_click(self.loc_mrr_plot)
         mrr_location_plot_button.style.button_color = "lightgray"
@@ -245,6 +269,7 @@ class Intrinsic_Evaluation_Output:
         
         self.embeddding_matrix.index = [i for i in range(self.embeddding_matrix.shape[0])]
 
+        # When choosing embedding , the tokenizer and embedding array are extracted from the file. After that, the screen of the datasets linked to the selected embedding is modified.
         
         with self.text_dataset_out:
             
@@ -262,6 +287,8 @@ class Intrinsic_Evaluation_Output:
 
 
     def embedding_not_linked(self):
+
+        # If the link does not exist, only the tokenizer and the embedding matrix are loaded.
 
         aux_emb = pd.read_csv("embeddings/" + self.Emb_list[0] + ".csv") 
 
@@ -316,6 +343,9 @@ class Intrinsic_Evaluation_Output:
         
         self.t_id_list = sorted(self.t_id_list)
         self.traj_id_dict_all = {self.t_id_list[i]: i for i in range(len(self.t_id_list))}
+
+
+        # As there is a link between the incorporation and the dataset, it is checked if there are already datasets of type sequence, if not, it is created.
 
         trajs = listdir("./trajectories")
 
@@ -374,6 +404,8 @@ class Intrinsic_Evaluation_Output:
 
 
     def traj_matrix_first_read(self):
+
+        # Initially, it checks if there are distance matrices for trajectories associated with the embedding and its dataset of type lat_lon that was chosen, among those that were linked.
 
         matrice = listdir("./matrices")
 
@@ -461,9 +493,13 @@ class Intrinsic_Evaluation_Output:
       
     def sensor_matrix_first_read(self):
 
+        # At first it is checked if the Road_Matrix exists, because it is only read if it exists, otherwise it is created. After that your reading is performed.
+
         if("Road_Matrix_sensors.csv" in listdir("./matrices")):
 
             mat = listdir("./matrices")
+
+            # In the two conditions above, a search is made in the matrices folder for the cosine matrix associated with the embedding
 
             if(self.embedding + "_cossine_matrix_sensors.csv" in mat):
         
@@ -500,25 +536,31 @@ class Intrinsic_Evaluation_Output:
             
         else:
 
-            with self.intrinsic_evaluation_output:
+            if(isinstance(self.Road_Matrix_sensors,str)):
+                if("Road_Matrix_sensors.csv" in listdir("./matrices")):
+                    self.Road_Matrix_sensors = pd.read_csv("matrices/Road_Matrix_sensors.csv")
+                else:
 
-                self.intrinsic_evaluation_output.clear_output()
+                    self.road_matrix_creation()
+            #with self.intrinsic_evaluation_output:
 
-                road_label = widgets.Label("The Road Matrix is ​​not in a folder, would you like to generate it (it may take a long time)?")
+            #    self.intrinsic_evaluation_output.clear_output()
 
-                yes_button = widgets.Button(description="Yes", layout=widgets.Layout(width="100px"))
-                yes_button.style.button_color = "lightgray"
-                yes_button.on_click(self.road_matrix_yes)
+            #    road_label = widgets.Label("The Road Matrix is ​​not in a folder, would you like to generate it (it may take a long time)?")
 
-                no_button = widgets.Button(description="No", layout=widgets.Layout(width="100px"))
-                no_button.style.button_color = "lightgray"
-                no_button.on_click(self.road_matrix_no)
+            #    yes_button = widgets.Button(description="Yes", layout=widgets.Layout(width="100px"))
+            #    yes_button.style.button_color = "lightgray"
+            #    yes_button.on_click(self.road_matrix_yes)
 
-                yes_no_box =  widgets.HBox([yes_button, self.spc1, no_button])
+            #    no_button = widgets.Button(description="No", layout=widgets.Layout(width="100px"))
+            #    no_button.style.button_color = "lightgray"
+            #    no_button.on_click(self.road_matrix_no)
 
-                road_box = widgets.VBox([road_label, self.spc1, yes_no_box])
+            #    yes_no_box =  widgets.HBox([yes_button, self.spc1, no_button])
 
-                display(road_box)
+            #    road_box = widgets.VBox([road_label, self.spc1, yes_no_box])
+
+            #    display(road_box)
 
             mat = listdir("./matrices")
 
@@ -671,6 +713,7 @@ class Intrinsic_Evaluation_Output:
 
     def road_matrix_creation(self):
 
+        # A screen with a progress bar is created, and it is possible to see the progress of the creation of the Road_Matrix.
         with self.intrinsic_evaluation_output:
 
             self.intrinsic_evaluation_output.clear_output()
@@ -771,6 +814,8 @@ class Intrinsic_Evaluation_Output:
 
         trajs = listdir("./trajectories")
 
+        # It is checked if there is any dataset of type sequence relating the embedding and the dataset of type lat_lon in the trajectories folder.
+
         if(self.embedding + "_" + self.traj_data + "_trajs" + ".csv" in trajs):                                                                                                                                                                                                                                                                                   
 
             self.LatLong = pd.read_csv("data/" + self.traj_data + ".csv") 
@@ -818,6 +863,8 @@ class Intrinsic_Evaluation_Output:
 
         trajs = listdir("./trajectories")
 
+        # Initially, a reading is performed to find out if there is a dataset of the sequence type representing this link in the trajectories folder, if not, this dataset is created
+
         if(not(self.embedding + "_" + self.traj_data + "_trajs" + ".csv" in trajs)):
 
             self.LatLong = pd.read_csv("data/" + self.traj_data + ".csv") 
@@ -830,6 +877,8 @@ class Intrinsic_Evaluation_Output:
             traj_dict = {"0":[list(self.LatLong[self.LatLong["trajectory_id"] == traj]["location_label"]) for traj in trajs_token],"trajectory_number":[str(self.traj_id_dict[i]) for i in trajs_token]}
             self.Dataset = pd.DataFrame(traj_dict,index=[str(self.traj_id_dict[i]) for i in trajs_token])
             self.Dataset.to_csv("trajectories/"+ self.embedding + "_" + self.traj_data + "_trajs"+".csv",index=False)
+
+
 
 
         self.Dataset = pd.read_csv("trajectories/" + self.embedding + "_" + self.traj_data + "_trajs" + ".csv") 
@@ -1093,7 +1142,7 @@ class Intrinsic_Evaluation_Output:
      
     def on_change_traj_data(self, change):
 
-            
+            # When the sequential data set is selected, the screen is cleared and then the calculations are made, modifying the class attributes, only then is the screen recomposed
             with self.text_dataset_out:
                 
                 self.text_dataset_out.clear_output()
@@ -1127,6 +1176,7 @@ class Intrinsic_Evaluation_Output:
 
                     self.validation_2 = True
                 
+                # The dropdown locations for plotting the top-k locations are only modified when a new sequential dataset is selected.
                 with self.select_location_dropdown_output:
                     
                     self.select_location_dropdown_output.clear_output()

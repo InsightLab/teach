@@ -33,12 +33,16 @@ class View_Trajectory_Data_Output:
 
         self.out_plot.layout = widgets.Layout(border='solid 2.0px white',margin='0px 10px 10px 10px',padding='5px 5px 5px 5px')
     
+        # Screen that shows the lat_lon dataset statistics.
         self.out_statistics = widgets.Output()
         self.out_statistics.layout = widgets.Layout(border='solid 1.5px white',margin='10px 70px 10px 0px', padding='5px 5px 5px 5px')
 
+        # Screen to show the trajectory sampling of the lat_lon type dataset.
         self.out_sampling = widgets.Output()
         self.out_sampling.layout = widgets.Layout(border='solid 1.5px white',margin='20px 10px 10px 0px', padding='5px 5px 5px 5px')
 
+        
+        # Dropdown to select dataset of type lat_lon.
         self.select_data_dropdown = widgets.Dropdown(description='',layout=widgets.Layout(width="80px"),options=self.dataset_list)
         self.select_data_dropdown.observe(self.on_change_dataset,  names='value')
         self.select_data_dropdown_output = out(self.select_data_dropdown)
@@ -48,6 +52,7 @@ class View_Trajectory_Data_Output:
         with self.out_statistics:
             
             self.select_data = widgets.Label("Select Data")
+
             self.show_statistics_button = widgets.Button(description="Show Statistics", layout=widgets.Layout(width="120px"))
             self.show_statistics_button.on_click(self.show_statistics)
             self.show_statistics_button.style.button_color = "lightgray"
@@ -60,6 +65,7 @@ class View_Trajectory_Data_Output:
         with self.out_sampling: 
             
             self.sampling_value = widgets.Label("Sampling")
+
             self.sampling_value_text  = widgets.Text(description='',layout=widgets.widgets.Layout(width="80px"))
             self.sampling_value_text.observe(self.on_change_sampling, names = 'value')
 
@@ -91,7 +97,8 @@ class View_Trajectory_Data_Output:
         with self.out_df:
 
             DF = pd.read_csv("data/"+ self.dataset +".csv")
-            
+
+            # Checking if the dataset is empty.
             if(len(DF) > 0):
             
                 self.out_df.clear_output()
@@ -106,6 +113,7 @@ class View_Trajectory_Data_Output:
 
                 df1 = ""
         
+                # Checking if location_labe exists as an attribute of the lat_lon dataset.
                 if("location_label" in list(DF.columns)):
                     
                     number_of_distinct_locations = len(set(DF["location_label"]))
@@ -130,6 +138,7 @@ class View_Trajectory_Data_Output:
 
             DF = pd.read_csv("data/"+ self.dataset +".csv")
         
+            # Checking if the dataset is empty.
             if(len(DF) > 0):
 
                 self.out_plot.clear_output()

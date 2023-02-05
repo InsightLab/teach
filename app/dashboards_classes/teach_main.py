@@ -57,6 +57,8 @@ class Teach_Main:
         self.embedding_name = ""
 
         self.intrinsic_evaluation_output = intrinsic_evaluation_output
+
+        # The classes associated with other screens , composing the Teach_Main class as an attribute
         self.VTDO = View_Trajectory_Data_Output()
         self.EEO = Extrinsic_Evaluation_Output()
         self.IEO = Intrinsic_Evaluation_Output(self.intrinsic_evaluation_output)
@@ -87,7 +89,7 @@ class Teach_Main:
 
 
 
-
+        # If the data_list is empty value element is empty
         if(len(self.data_list)>0):
         
             self.data_upload = widgets.SelectMultiple(options=self.data_list,description='Data:', value=[self.data_list[0]],layout=widgets.Layout(width="380px",height="180px"))
@@ -95,20 +97,23 @@ class Teach_Main:
             
             self.data_upload = widgets.SelectMultiple(options=self.data_list,description='Data:', value=[],layout=widgets.Layout(width="380px",height="180px"))
         
+        # Screen that shows the datasets of type lat_lon that are uploaded to the tool
         self.data_upload_output = out(self.data_upload)
 
+        # The space to put the name of the lat_lon dataset to be renamed.
         self.data_name_label = widgets.Text(description='',layout=widgets.widgets.Layout(width="250px"))
         self.data_name_label.observe(self.on_change_data_name, names = 'value')
 
-        
+        # Data upload button
         self.data_upload_button = widgets.FileUpload(acept=".csv",multiple=True,layout=widgets.Layout(width="150px"))
         self.data_upload_button.observe(self.upload_data, names = "value")
 
+        # Data rename button
         self.data_rename_button = widgets.Button(description="Rename", layout=widgets.Layout(width="90px"))
         self.data_rename_button.style.button_color = "lightgray"
         self.data_rename_button.on_click(self.rename_data)
 
-    
+        # Data remove button
         self.data_remove_button = widgets.Button(description="Remove", layout=widgets.Layout(width="150px"))
         self.data_remove_button.on_click(self.remove_data)
 
@@ -118,7 +123,7 @@ class Teach_Main:
 
 
 
-        
+        # If model_list is empty value element is empty
         if(len(self.model_list)>0):
         
             self.model_multi_select_upload = widgets.SelectMultiple(options=self.model_list,description='Models:', value=[self.model_list[0]],layout=widgets.Layout(width="380px",height="180px"))
@@ -127,18 +132,23 @@ class Teach_Main:
             
             self.model_multi_select_upload = widgets.SelectMultiple(options=self.model_list,description='Models:', value=[],layout=widgets.Layout(width="380px",height="180px"))
         
+        # the screen that shows the models that are uploaded to the tool
         self.model_multi_select_upload_output = out(self.model_multi_select_upload)
 
+        # Model upload button
         self.model_upload_button = widgets.FileUpload(acept=".h5",multiple=True,layout=widgets.Layout(width="150px"))
         self.model_upload_button.observe(self.upload_model, names="value")
 
+        # Model remove button
         self.model_remove_button = widgets.Button(description="Remove", layout=widgets.Layout(width="150px"))
         self.model_remove_button.on_click(self.remove_model)
         
+        # Model raname button
         self.model_rename_button = widgets.Button(description="Rename", layout=widgets.Layout(width="90px"))
         self.model_rename_button.style.button_color = "lightgray"
         self.model_rename_button.on_click(self.rename_model)
         
+        # The space to put the name of model to be renamed.
         self.model_name_label = widgets.Text(description='',layout=widgets.widgets.Layout(width="250px"))
         self.model_name_label.observe(self.on_change_model_name, names = 'value')
             
@@ -147,20 +157,22 @@ class Teach_Main:
                                                         widgets.HBox([self.spc1,self.spc1,self.spc2,self.model_name_label,self.model_rename_button])])])
 
         
-        
+        # Screen to choose the lat_lon type data to be linked to the models.
         self.model_data_select_multiple = widgets.SelectMultiple(options=[self.model_data_multi_select_dict_show[mdl] for mdl in self.data_list],description='Data:',layout=widgets.Layout(width="380px",height="180px"))
         self.model_data_select_multiple.observe(self.on_change_model_data_ml, names = 'value')
         self.model_data_select_multiple_output = out(self.model_data_select_multiple)
 
-        
+        # Screen to choose the models to be linked to the models.
         self.model_select = widgets.Select(options=self.model_list + [''],description='Models:',value='',layout=widgets.Layout(width="380px",height="180px"))
         self.model_select.observe(self.on_change_model_ml, names = 'value')
         self.model_select_output = out(self.model_select)
         
+        # Model link button
         self.model_link_button = widgets.Button(description="Link", layout=widgets.Layout(width="80px"))
         self.model_link_button.style.button_color = "lightgray"
         self.model_link_button.on_click(self.link_model)
         
+        # Model unlink button
         self.model_unlink_button = widgets.Button(description="Unlink", layout=widgets.Layout(width="80px"))
         self.model_unlink_button.style.button_color = "lightgray"
         self.model_unlink_button.on_click(self.unlink_model)
@@ -169,50 +181,53 @@ class Teach_Main:
                                                 widgets.HBox([self.model_select_output,self.spc2,self.model_data_select_multiple_output])])
 
         
-
+        # If embedding_list is empty value element is empty
         if(len(self.embedding_list)>0):
             self.embedding_multi_select_upload = widgets.SelectMultiple(options=self.embedding_list,description='Emb:', value=[self.embedding_list[0]],layout=widgets.Layout(width="380px",height="180px"))
 
         else:       
             self.embedding_multi_select_upload = widgets.SelectMultiple(options=self.embedding_list,description='Emb:', value=[],layout=widgets.Layout(width="380px",height="180px"))
-            
+        
+        # the screen that shows the embedding that are uploaded to the tool
         self.embedding_multi_select_upload_output = out(self.embedding_multi_select_upload)
 
+        # Embedding upload button
         self.embedding_upload_button = widgets.FileUpload(acept=".csv",multiple=True,layout=widgets.Layout(width="150px"))
         self.embedding_upload_button.observe(self.upload_embedding, names="value")
         
-        
+        # Embedding remove button
         self.remove_embedding_button = widgets.Button(description="Remove", layout=widgets.Layout(width="150px"))
         self.remove_embedding_button.on_click(self.remove_embedding)
         
-        
+        # Embedding rename button
         self.rename_embedding_button = widgets.Button(description="Rename", layout=widgets.Layout(width="90px"))
         self.rename_embedding_button.style.button_color = "lightgray"
         self.rename_embedding_button.on_click(self.rename_embedding)
         
+        # The space to put the name of embedding to be renamed.
         self.embedding_name_label = widgets.Text(description='',layout=widgets.widgets.Layout(width="250px"))
         self.embedding_name_label.observe(self.on_change_emb_name, names = 'value')
         
         self.embedding_upload_box = widgets.HBox(children=[widgets.VBox([self.embedding_upload_button,self.remove_embedding_button,self.spc1]),self.spc1,
                                 widgets.VBox([self.embedding_multi_select_upload_output,self.spc2, widgets.HBox([self.spc1,self.spc1,self.spc2,self.embedding_name_label,self.rename_embedding_button])])])
         
-        
+        # Screen to choose the lat_lon type data to be linked to the embedding.
         self.embedding_data_select_multiple = widgets.SelectMultiple(options=[self.data_multi_select_dict_show[dl] for dl in self.data_list],description='Data:', layout=widgets.Layout(width="380px",height="180px"))
         self.embedding_data_select_multiple.observe(self.on_change_emb_data_ml, names = 'value')
         self.embedding_data_select_multiple_output = out(self.embedding_data_select_multiple)
         
-        
+        # Screen to choose the embeddings to be linked to the embeddings.
         self.embedding_select = widgets.Select(options=self.embedding_list + [''],description='Emb:',value='',layout=widgets.Layout(width="380px",height="180px"))
         self.embedding_select.observe(self.on_change_emb_ml, names = 'value')
         self.embedding_select_output = out(self.embedding_select)
         
         
-        
+        # Embedding link button
         self.embedding_link_button = widgets.Button(description="Link", layout=widgets.Layout(width="80px"))
         self.embedding_link_button.style.button_color = "lightgray"
         self.embedding_link_button.on_click(self.link_embedding)
 
-        
+        # Embedding unlink button
         self.embedding_unlink_button = widgets.Button(description="Unlink", layout=widgets.Layout(width="80px"))
         self.embedding_unlink_button.style.button_color = "lightgray"
         self.embedding_unlink_button.on_click(self.unlink_embedding)
@@ -308,6 +323,8 @@ class Teach_Main:
         self.embedding_multi_select = change.new
         
         emb_data = pd.read_csv("Emb#Data.csv")
+
+        # Checks if the selected embedding is in the links table, if it is, it makes a change to the screen that shows dataset of type lat_lon, showing the linked datasets with the check symbol.
         
         if(self.embedding_multi_select in list(emb_data["Emb"])):
             
@@ -371,6 +388,8 @@ class Teach_Main:
             self.data_upload_output.clear_output()
             
             display(self.data_upload)
+
+        # When uploading new data sets of type lat_lon, the screens to be linked to embeddings and models are modified as well as the Dropdown of the trajectory view tab.
 
         with self.embedding_data_select_multiple_output :
 
@@ -471,6 +490,9 @@ class Teach_Main:
                 self.data_upload = widgets.SelectMultiple(options=self.data_list,description='Data:', value=[],layout=widgets.Layout(width="380px",height="180px"))
             
             display(self.data_upload)
+
+        # When a data_set of type lat_lon is removed, the link between it and the embedding is lost, so, in addition to removing this data from the screen of 
+        # links and models and embeddings, this data disappears from the Dropdown of the view trajectory tab
 
         with self.embedding_data_select_multiple_output:
 
