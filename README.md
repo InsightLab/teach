@@ -12,45 +12,45 @@ TEACH (Trajectory Embedding compArator benCHmark) assesses trajectory embeddings
 At first, create an environment in anaconda named *teach_env*:
 
 ```
-> conda create -n teach_env python=3.8.3 
+conda create -n teach_env python=3.8.3 
 ```
 
 Enter the environment using:
 
 ```
-> conda activate teach_env
+conda activate teach_env
 ```
 
 Execute the following commands:
 
 ```
-> conda install -c conda-forge voila pymove nltk=3.7 ipython=8.8.0 
+conda install -c conda-forge voila pymove nltk=3.7 ipython=8.8.0 
 ```
 ```
-> conda install tensorflow=2.9.1 matplotlib=3.6.2
+conda install tensorflow=2.9.1 matplotlib=3.6.2
 ```
 ```
-> conda install -c conda-forge osmnx=1.2.2 networkx=2.8.5 scikit-learn=1.0.2
+conda install -c conda-forge osmnx=1.2.2 networkx=2.8.5 scikit-learn=1.0.2
 ```
 
 
 Clone the repository:
 
 ```
-> git clone https://github.com/InsightLab/teach.git
+git clone https://github.com/InsightLab/teach.git
 ```
 
 
 Enter in the *app* directory:
 
 ```
-> cd app
+cd app
 ```
 
 Add to the *lat_lon_sensors* directory a *.csv* table containing the following attributes: *geos25*, *lat*, *lon*, *nodeId*, *nodeLat*, *nodeLon*, *token_id*. Finally, to use the tool just run the following command:
 
 ```
-> voila teach.ipynb
+voila teach.ipynb
 ```
 
 ## Using the TEACH
