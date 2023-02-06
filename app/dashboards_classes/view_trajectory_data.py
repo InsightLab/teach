@@ -21,8 +21,11 @@ class View_Trajectory_Data_Output:
 
     def __init__(self):
 
-        self.dataset_list = [dataframe.split(".")[0] for dataframe in listdir("data/")]               
-        self.dataset  = self.dataset_list[0]
+        self.dataset_list = [dataframe.split(".")[0] for dataframe in listdir("data/")]       
+        if(len(self.dataset_list)>0):      
+            self.dataset  = self.dataset_list[0]
+        else:
+            self.dataset=""
 
         self.spc = widgets.Label("")
         self.spc1 = widgets.Label("",layout=widgets.Layout(width="1px",height="1px"))

@@ -370,12 +370,10 @@ class Teach_Main:
             display(widgets.Label("Processing..."))
             
             new_values = data_upload_button.new
-            keys = list(new_values.keys())
 
-            for k in keys:
-                data = StringIO(str(new_values[k]["content"],'utf-8'))
-                df=pd.read_csv(data,index_col=0)
-                df.to_csv("data/"+k.split(".")[0]+".csv")
+            data = StringIO(str(new_values[0]["content"],'utf-8'))
+            df=pd.read_csv(data,index_col=0)
+            df.to_csv("data/"+new_values[0]["name"].split(".")[0]+".csv")
                 
             self.data_list = [data.split(".")[0] for data in listdir("data/")]
             
@@ -395,10 +393,7 @@ class Teach_Main:
 
             self.embedding_data_select_multiple_output.clear_output()
         
-            keys = list(new_values.keys())
-            
-            for k in keys:
-                self.data_multi_select_dict_show[k.split(".")[0]] = k.split(".")[0]
+            self.data_multi_select_dict_show[new_values[0]["name"].split(".")[0]] = new_values[0]["name"].split(".")[0]
 
             
             self.embedding_data_select_multiple.options = [self.data_multi_select_dict_show[dl] for dl in self.data_list]
@@ -407,11 +402,8 @@ class Teach_Main:
         with self.model_data_select_multiple_output:
 
             self.model_data_select_multiple_output.clear_output()
-        
-            keys = list(new_values.keys())
             
-            for k in keys:
-                self.model_data_multi_select_dict_show[k.split(".")[0]] = k.split(".")[0]
+            self.model_data_multi_select_dict_show[new_values[0]["name"].split(".")[0]] = new_values[0]["name"].split(".")[0]
 
             
             self.model_data_select_multiple.options = [self.model_data_multi_select_dict_show[mdl] for mdl in self.data_list]
@@ -546,7 +538,6 @@ class Teach_Main:
             self.IEO.Emb_df = pd.read_csv("Emb#Data.csv") 
             self.IEO.Emb_dict = { emb: self.IEO.Emb_df[self.IEO.Emb_df["Emb"]==emb].Data.values[0].split("%") for emb in list(self.IEO.Emb_df.Emb)}
             self.IEO.embedding_choice.options = self.IEO.Emb_list 
-            self.IEO.embedding_choice.value = self.IEO.Emb_list[0]
             self.IEO.embedding_choice_out.clear_output()
             display(self.IEO.embedding_choice)
             
@@ -696,7 +687,6 @@ class Teach_Main:
             self.IEO.Emb_df = pd.read_csv("Emb#Data.csv") 
             self.IEO.Emb_dict = { emb: self.IEO.Emb_df[self.IEO.Emb_df["Emb"]==emb].Data.values[0].split("%") for emb in list(self.IEO.Emb_df.Emb)}
             self.IEO.embedding_choice.options = self.IEO.Emb_list 
-            self.IEO.embedding_choice.value = self.IEO.Emb_list[0]
             self.IEO.embedding_choice_out.clear_output()
             display(self.IEO.embedding_choice)
             
@@ -712,25 +702,23 @@ class Teach_Main:
             display(widgets.Label("Processing..."))
             
             new_values = model_upload_button.new
-            keys = list(new_values.keys())
             
             Emb_list = list(pd.read_csv("Emb.csv")["Emb"])
             Model_Emb_df = pd.read_csv("Model#Emb.csv")
 
-            for k in keys:
-                data= io.BytesIO(new_values[k]["content"])
-                model= h5py.File(data,'r')
-                model_keras= load_model(model)
-                model_keras.save("Models/"+k.split(".")[0]+".h5")
-                
-                for emb in Emb_list: 
-                
-                    if(not(k.split(".")[0] in list(Model_Emb_df.Model) )):
+            data= io.BytesIO(new_values[0]["content"])
+            model= h5py.File(data,'r')
+            model_keras= load_model(model)
+            model_keras.save("Models/"+new_values[0]["name"].split(".")[0]+".h5")
+            
+            for emb in Emb_list: 
+            
+                if(not(new_values[0]["name"].split(".")[0] in list(Model_Emb_df.Model) )):
 
-                        if(k.split(".")[0] == emb.split("_")[0]):
+                    if(new_values[0]["name"].split(".")[0] == emb.split("_")[0]):
 
-                            Model_Emb_df = pd.DataFrame({"Model":list(Model_Emb_df["Model"]) + [k.split(".")[0]] , 
-                                        "Emb":list(Model_Emb_df["Emb"]) + [emb]})
+                        Model_Emb_df = pd.DataFrame({"Model":list(Model_Emb_df["Model"]) + [new_values[0]["name"].split(".")[0]] , 
+                                    "Emb":list(Model_Emb_df["Emb"]) + [emb]})
             
             
             Model_Emb_df.to_csv("Model#Emb.csv",index=False)
@@ -1020,13 +1008,10 @@ class Teach_Main:
             display(widgets.Label("Processing..."))
             
             new_values = embedding_upload_button.new
-            keys = list(new_values.keys())
-
-            for k in keys:
                 
-                data = StringIO(str(new_values[k]["content"],'utf-8'))
-                df=pd.read_csv(data,index_col=0)
-                df.to_csv("embeddings/"+k.split(".")[0]+".csv")
+            data = StringIO(str(new_values[0]["content"],'utf-8'))
+            df=pd.read_csv(data,index_col=0)
+            df.to_csv("embeddings/"+new_values[0]["name"].split(".")[0]+".csv")
                 
             self.embedding_list = [emb.split(".")[0] for emb in listdir("embeddings/")]
             
@@ -1110,7 +1095,6 @@ class Teach_Main:
             self.IEO.Emb_df = pd.read_csv("Emb#Data.csv") 
             self.IEO.Emb_dict = { emb: self.IEO.Emb_df[self.IEO.Emb_df["Emb"]==emb].Data.values[0].split("%") for emb in list(self.IEO.Emb_df.Emb)}
             self.IEO.embedding_choice.options = self.IEO.Emb_list 
-            self.IEO.embedding_choice.value = self.IEO.Emb_list[0]
             self.IEO.embedding_choice_out.clear_output()
             display(self.IEO.embedding_choice)
 
@@ -1170,7 +1154,6 @@ class Teach_Main:
             self.IEO.Emb_df = pd.read_csv("Emb#Data.csv") 
             self.IEO.Emb_dict = { emb: self.IEO.Emb_df[self.IEO.Emb_df["Emb"]==emb].Data.values[0].split("%") for emb in list(self.IEO.Emb_df.Emb)}
             self.IEO.embedding_choice.options = self.IEO.Emb_list 
-            self.IEO.embedding_choice.value = self.IEO.Emb_list[0]
             self.IEO.embedding_choice_out.clear_output()
             display(self.IEO.embedding_choice)
 
@@ -1254,7 +1237,6 @@ class Teach_Main:
             self.IEO.Emb_df = pd.read_csv("Emb#Data.csv") 
             self.IEO.Emb_dict = { emb: self.IEO.Emb_df[self.IEO.Emb_df["Emb"]==emb].Data.values[0].split("%") for emb in list(self.IEO.Emb_df.Emb)}
             self.IEO.embedding_choice.options = self.IEO.Emb_list 
-            self.IEO.embedding_choice.value = self.IEO.Emb_list[0]
             self.IEO.embedding_choice_out.clear_output()
             display(self.IEO.embedding_choice)
                 
@@ -1307,7 +1289,6 @@ class Teach_Main:
             self.IEO.Emb_df = pd.read_csv("Emb#Data.csv") 
             self.IEO.Emb_dict = { emb: self.IEO.Emb_df[self.IEO.Emb_df["Emb"]==emb].Data.values[0].split("%") for emb in list(self.IEO.Emb_df.Emb)}
             self.IEO.embedding_choice.options = self.IEO.Emb_list 
-            self.IEO.embedding_choice.value = self.IEO.Emb_list[0]
             self.IEO.embedding_choice_out.clear_output()
             display(self.IEO.embedding_choice)
 

@@ -45,17 +45,25 @@ class Intrinsic_Evaluation_Output:
         self.Emb_df = pd.read_csv("Emb#Data.csv") 
         self.Emb_dict = { emb: self.Emb_df[self.Emb_df["Emb"]==emb].Data.values[0].split("%") for emb in list(self.Emb_df.Emb)}
 
-
-        self.text_dataset = widgets.Select(description="Select Data:",layout=widgets.Layout(width="380px",height="180px"), 
-                                        options= [''] if(not(self.Emb_list[0] in self.Emb_dict.keys())) else self.Emb_dict[self.Emb_list[0]] + [''],value='')
-
+        if(len(self.Emb_list)>0):
+            self.text_dataset = widgets.Select(description="Select Data:",layout=widgets.Layout(width="380px",height="180px"), 
+                                            options= [''] if(not(self.Emb_list[0] in self.Emb_dict.keys())) else self.Emb_dict[self.Emb_list[0]] + [''],value='')
+        else:
+            self.text_dataset = widgets.Select(description="Select Data:",layout=widgets.Layout(width="380px",height="180px"), 
+                                            options= [''] ,value='')
+    
         self.text_dataset.observe(self.on_change_traj_data,names="value")
 
         # Screen to select the dataset (lat_lon) linked to the chosen embedding
         self.text_dataset_out = out(self.text_dataset)
 
         self.embedding_text = widgets.Label("Select Embedding")
-        self.embedding_choice = widgets.Dropdown(description='',layout=widgets.Layout(width="150px"),options=self.Emb_list,value=self.Emb_list[0])
+
+        if(len(self.Emb_list)>0):
+            self.embedding_choice = widgets.Dropdown(description='',layout=widgets.Layout(width="150px"),options=self.Emb_list,value=self.Emb_list[0])
+        else:
+            self.embedding_choice = widgets.Dropdown(description='',layout=widgets.Layout(width="150px"),options=self.Emb_list)
+
         self.embedding_choice.observe(self.on_change_embedding_choice, names="value")
 
         # Dropdown used to choose the embedding
@@ -113,7 +121,8 @@ class Intrinsic_Evaluation_Output:
 
         if(len(list(self.Emb_df.Emb))==0):
             
-            self.embedding_not_linked()
+            if(len(self.Emb_list)>0):
+                self.embedding_not_linked()
                
         # If there is link between embedding and datasets of type lat_long  
              
@@ -256,34 +265,35 @@ class Intrinsic_Evaluation_Output:
     def on_change_embedding_choice(self, change):
             
         self.embedding = change.new
-            
-        aux_emb = pd.read_csv("embeddings/" + self.embedding + ".csv") 
-    
-        self.tokenizer_df = aux_emb.loc[0:list(pd.isnull(aux_emb["sensor"])).index(True)-1,["sensor","id"]]
-        self.tokenizer_df.id = [int(i) for i in self.tokenizer_df.id]
-        self.tokenizer_df.index = self.tokenizer_df.id
-        self.tokenizer_df = self.tokenizer_df[["sensor","id"]]
+        
+        if(len(self.Emb_list)>0):
+            aux_emb = pd.read_csv("embeddings/" + self.embedding + ".csv") 
+        
+            self.tokenizer_df = aux_emb.loc[0:list(pd.isnull(aux_emb["sensor"])).index(True)-1,["sensor","id"]]
+            self.tokenizer_df.id = [int(i) for i in self.tokenizer_df.id]
+            self.tokenizer_df.index = self.tokenizer_df.id
+            self.tokenizer_df = self.tokenizer_df[["sensor","id"]]
 
-        self.embeddding_matrix = aux_emb.loc[list(pd.isnull(aux_emb["sensor"])).index(True):int(list(pd.isnull(aux_emb["sensor"])).index(True)*2),
-                        [str(i) for i in range(len(aux_emb.columns)-2)]]
-        
-        self.embeddding_matrix.index = [i for i in range(self.embeddding_matrix.shape[0])]
+            self.embeddding_matrix = aux_emb.loc[list(pd.isnull(aux_emb["sensor"])).index(True):int(list(pd.isnull(aux_emb["sensor"])).index(True)*2),
+                            [str(i) for i in range(len(aux_emb.columns)-2)]]
+            
+            self.embeddding_matrix.index = [i for i in range(self.embeddding_matrix.shape[0])]
 
-        # When choosing embedding , the tokenizer and embedding array are extracted from the file. After that, the screen of the datasets linked to the selected embedding is modified.
-        
-        with self.text_dataset_out:
+            # When choosing embedding , the tokenizer and embedding array are extracted from the file. After that, the screen of the datasets linked to the selected embedding is modified.
             
-            self.text_dataset_out.clear_output()
+            with self.text_dataset_out:
+                
+                self.text_dataset_out.clear_output()
+                
+                display(widgets.Label("Processing..."))
             
-            display(widgets.Label("Processing..."))
-        
-            self.text_dataset.options = [''] if(not(self.embedding in self.Emb_dict.keys())) else self.Emb_dict[self.embedding] + ['']
-            
-            self.text_dataset.value = ''
-            
-            self.text_dataset_out.clear_output()
-            
-            display(self.text_dataset)
+                self.text_dataset.options = [''] if(not(self.embedding in self.Emb_dict.keys())) else self.Emb_dict[self.embedding] + ['']
+                
+                self.text_dataset.value = ''
+                
+                self.text_dataset_out.clear_output()
+                
+                display(self.text_dataset)
 
 
     def embedding_not_linked(self):
