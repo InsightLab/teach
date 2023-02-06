@@ -41,8 +41,11 @@ git clone https://github.com/InsightLab/teach.git
 ```
 
 
-Enter in the *app* directory:
+Enter in the *teach* directory, so enter in the *app* directory:
 
+```
+cd app
+```
 ```
 cd app
 ```
