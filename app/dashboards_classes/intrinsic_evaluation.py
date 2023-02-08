@@ -312,7 +312,7 @@ class Intrinsic_Evaluation_Output:
 
         self.embedding_matrix.index = [i for i in range(self.embedding_matrix.shape[0])]
         
-        self.LL = pd.read_csv("lat_lon_sensors/"+"sensors_roubados_representativos_countmin18(1).csv", index_col='geos25')
+        self.LL = pd.read_csv("lat_lon_sensors/"+"sensors_lat_lon.csv", index_col='geos25')
         self.LL = self.LL.astype({'lat':'float32', 'lon':'float32'})
         self.LL.drop_duplicates(inplace=True)
         self.LL['sensor'] = [str(geos25).lower() for geos25 in self.LL.index.values]
@@ -338,7 +338,7 @@ class Intrinsic_Evaluation_Output:
         self.LatLong   = pd.read_csv("data/"+self.traj_data + ".csv") 
         aux_latlon = sorted(list(set(self.LatLong["trajectory_id"])))
         
-        self.LL = pd.read_csv("lat_lon_sensors/"+"sensors_roubados_representativos_countmin18(1).csv", index_col='geos25')
+        self.LL = pd.read_csv("lat_lon_sensors/"+"sensors_lat_lon.csv", index_col='geos25')
         self.LL = self.LL.astype({'lat':'float32', 'lon':'float32'})
         self.LL.drop_duplicates(inplace=True)
         self.LL['sensor'] = [str(geos25).lower() for geos25 in self.LL.index.values]
